@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #1a1a1b;
+            --bg-tertiary: #262627;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent: #4f46e5;
+            --accent-hover: #6366f1;
+            --good: #10b981;
+            --neutral: #6b7280;
+            --bad: #ef4444;
+            --border: #333334;
+            --shadow: rgba(0,0,0,0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 0.25rem solid var(--border);
+            border-top: 0.25rem solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loader-text {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .container {
+            max-width: 90rem;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            font-weight: 400;
+        }
+        
+        .day-row {
+            background: var(--bg-secondary);
+            border: 0.125rem solid var(--border);
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 0.5rem 1rem var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .day-row:hover {
+            transform: translateY(-0.125rem);
+            box-shadow: 0 0.75rem 1.5rem var(--shadow);
+        }
+        
+        .day-header {
+            padding: 1.5rem 2rem;
+            background: var(--bg-tertiary);
+            border-bottom: 0.125rem solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .date {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .export-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+        
+        .export-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+        
+        .day-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        .tasks-section {
+            background: var(--bg-tertiary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .task {
+            background: var(--bg-primary);
+            border: 0.125rem solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: border-color 0.2s ease;
+        }
+        
+        .task.good { border-color: var(--good); }
+        .task.neutral { border-color: var(--neutral); }
+        .task.bad { border-color: var(--bad); }
+        
+        .timer {
+            background: var(--bg-secondary);
+            border: 0.125rem solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 6rem;
+            text-align: center;
+        }
+        
+        .timer:hover { transform: scale(1.05); }
+        .timer.running { animation: pulse 2s infinite; }
+        .timer.good { color: var(--good); border-color: var(--good); }
+        .timer.neutral { color: var(--neutral); border-color: var(--neutral); }
+        .timer.bad { color: var(--bad); border-color: var(--bad); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .habit-type {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .habit-type:hover { transform: scale(1.1); }
+        .habit-type.good { background: var(--good); box-shadow: 0 0 1rem rgba(16, 185, 129, 0.3); }
+        .habit-type.neutral { background: var(--neutral); }
+        .habit-type.bad { background: var(--bad); box-shadow: 0 0 1rem rgba(239, 68, 68, 0.3); }
+        
+        .task-name {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background 0.2s ease;
+        }
+        
+        .task-name:focus {
+            background: var(--bg-secondary);
+            outline: none;
+        }
+        
+        .delete-btn {
+            background: var(--bad);
+            color: white;
+            border: none;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0.5rem rgba(239, 68, 68, 0.3);
+        }
+        
+        .add-task-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        
+        .add-task-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-0.125rem);
+        }
+        
+        .thoughts-section {
+            background: var(--bg-tertiary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        
+        .thought {
+            background: var(--bg-primary);
+            border: 0.125rem solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .thought-task {
+            font-size: 0.875rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .thought-content {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            resize: vertical;
+            min-height: 4rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .thought-content:focus { outline: none; }
+        
+        .disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 768px) {
+            .day-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .task {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .timer {
+                align-self: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div class="loader-text">Loading your habits...</div>
+    </div>
+    
+    <div class="container" id="app" style="display: none;">
+        <div class="header">
+            <h1 class="title">Habit Tracker</h1>
+            <p class="subtitle">Build better habits, one day at a time</p>
+        </div>
+        
+        <div id="days-container"></div>
+    </div>
+
+    <script>
+        class HabitTracker {
+            constructor() {
+                this.data = [];
+                this.timers = new Map();
+                this.sounds = {
+                    good: new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSWA0fPTgjMGHm688dqATwkKqveTrHMiCSdz0/HUhDQGGoHN8+SGOAcUY7zu4I5TCAfY8/Le2J8iBCuM0PPdhhwGG27B9O2XTggJarbtx6hfGwUvqOp5kOhKGAZJqOPQ8+hgGwUzlNHQ3e5jHQQrtOqxrGseCxtn1PLJcSYEJH3K8OKPOwoOXLHswJFUDA9HotLt1plSEEuV0O7TszhUIkSQxejBVSdCJU+TvOZ1JiCTwNrkXJGYUKUu'),
+                    bad: new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSWA0fPTgjMGHm688dqATwkKqveTrHMiCSdz0/HUhDQGGoHN8+SGOAcUY7zu4I5TCAfY8/Le2J8iBCuM0PPdhhwGG27B9O2XTggJarbtx6hfGwUvqOp5kOhKGAZJqOPQ8+hgGwUzlNHQ3e5jHQQrtOqxrGseCxtn1PLJcSYEJH3K8OKPOwoOXLHswJFUDA9HotLt1plSEEuV0O7TszhUIkSQxejBVSdCJU+TvOZ1JiCTwNrkXJGYUKUu')
+                };
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    await this.loadData();
+                    this.render();
+                    this.startAutoSave();
+                    setTimeout(() => {
+                        document.getElementById('loader').classList.add('hidden');
+                        document.getElementById('app').style.display = 'block';
+                    }, 1500);
+                } catch (error) {
+                    console.error('Failed to initialize:', error);
+                }
+            }
+            
+            async loadData() {
+                const response = await fetch('/api/data');
+                this.data = await response.json();
+            }
+            
+            async saveData(dayData) {
+                await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dayData)
+                });
+            }
+            
+            render() {
+                const container = document.getElementById('days-container');
+                container.innerHTML = '';
+                
+                this.data.forEach(day => {
+                    const dayEl = this.createDayElement(day);
+                    container.appendChild(dayEl);
+                });
+            }
+            
+            createDayElement(day) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day-row';
+                
+                dayEl.innerHTML = `
+                    <div class="day-header">
+                        <div class="date">${new Date(day.dt).toLocaleDateString()}</div>
+                        <button class="export-btn" onclick="app.exportDay('${day.dt}')">Export MD</button>
+                    </div>
+                    <div class="day-content ${day.ed ? '' : 'disabled'}">
+                        <div class="tasks-section">
+                            <h3 class="section-title">Tasks</h3>
+                            <div class="tasks" data-day="${day.dt}">
+                                ${day.tsks.map(task => this.createTaskHTML(task, day.dt)).join('')}
+                            </div>
+                            ${day.ed ? '<button class="add-task-btn" onclick="app.addTask(\''+day.dt+'\')">+ Add Task</button>' : ''}
+                        </div>
+                        <div class="thoughts-section">
+                            <h3 class="section-title">Thoughts</h3>
+                            <div class="thoughts" data-day="${day.dt}">
+                                ${day.ths.map(th => this.createThoughtHTML(th, day.dt)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                if (day.ed) {
+                    day.tsks.forEach(task => {
+                        if (task.st) {
+                            this.startTimer(task.id, task.st);
+                        }
+                    });
+                }
+                
+                return dayEl;
+            }
+            
+            createTaskHTML(task, dayDate) {
+                const hrs = Math.floor(task.tm / 3600);
+                const mins = Math.floor((task.tm % 3600) / 60);
+                const secs = task.tm % 60;
+                const timeStr = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                
+                return `
+                    <div class="task ${task.tp}" data-task-id="${task.id}">
+                        <div class="timer ${task.tp} ${task.st ? 'running' : ''}" onclick="app.toggleTimer('${task.id}')" oncontextmenu="app.resetTimer(event, '${task.id}')">${timeStr}</div>
+                        <div class="habit-type ${task.tp}" onclick="app.toggleHabitType('${task.id}')"></div>
+                        <input type="text" class="task-name" value="${task.nm}" onchange="app.updateTaskName('${task.id}', this.value)" placeholder="Habit name">
+                        <button class="delete-btn" onclick="app.deleteTask('${task.id}')">×</button>
+                    </div>
+                `;
+            }
+            
+            createThoughtHTML(thought, dayDate) {
+                return `
+                    <div class="thought">
+                        <div class="thought-task">Task: ${thought.tk_id}</div>
+                        <textarea class="thought-content" onchange="app.updateThought('${thought.tk_id}', this.value)" placeholder="Write your thoughts...">${thought.ct}</textarea>
+                    </div>
+                `;
+            }
+            
+            addTask(dayDate) {
+                const day = this.data.find(d => d.dt === dayDate);
+                const taskId = Date.now().toString();
+                
+                const newTask = {
+                    id: taskId,
+                    nm: '',
+                    tp: 'neutral',
+                    tm: 0,
+                    st: null
+                };
+                
+                day.tsks.push(newTask);
+                
+                const newThought = {
+                    tk_id: taskId,
+                    ct: ''
+                };
+                day.ths.push(newThought);
+                
+                this.render();
+                this.saveData(day);
+            }
+            
+            deleteTask(taskId) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                day.tsks = day.tsks.filter(t => t.id !== taskId);
+                day.ths = day.ths.filter(th => th.tk_id !== taskId);
+                
+                if (this.timers.has(taskId)) {
+                    clearInterval(this.timers.get(taskId));
+                    this.timers.delete(taskId);
+                }
+                
+                this.render();
+                this.saveData(day);
+            }
+            
+            toggleTimer(taskId) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                const task = day.tsks.find(t => t.id === taskId);
+                
+                if (task.st) {
+                    this.stopTimer(taskId);
+                } else {
+                    this.startTimer(taskId);
+                }
+            }
+            
+            startTimer(taskId, startTime = Date.now()) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                const task = day.tsks.find(t => t.id === taskId);
+                
+                task.st = startTime;
+                
+                const timer = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - task.st) / 1000);
+                    task.tm = elapsed;
+                    
+                    this.updateTimerDisplay(taskId, elapsed);
+                    this.checkSoundTrigger(task, elapsed);
+                }, 1000);
+                
+                this.timers.set(taskId, timer);
+                this.render();
+            }
+            
+            stopTimer(taskId) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                const task = day.tsks.find(t => t.id === taskId);
+                
+                if (this.timers.has(taskId)) {
+                    clearInterval(this.timers.get(taskId));
+                    this.timers.delete(taskId);
+                }
+                
+                task.st = null;
+                this.render();
+                this.saveData(day);
+            }
+            
+            resetTimer(event, taskId) {
+                event.preventDefault();
+                if (event.ctrlKey && event.shiftKey && event.altKey) {
+                    this.deleteTask(taskId);
+                }
+            }
+            
+            updateTimerDisplay(taskId, elapsed) {
+                const hrs = Math.floor(elapsed / 3600);
+                const mins = Math.floor((elapsed % 3600) / 60);
+                const secs = elapsed % 60;
+                const timeStr = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                
+                const timerEl = document.querySelector(`[data-task-id="${taskId}"] .timer`);
+                if (timerEl) {
+                    timerEl.textContent = timeStr;
+                }
+            }
+            
+            checkSoundTrigger(task, elapsed) {
+                if (task.tp === 'good' && elapsed > 0 && elapsed % 300 === 0) {
+                    this.sounds.good.play().catch(() => {});
+                } else if (task.tp === 'bad' && elapsed > 0 && elapsed % 150 === 0) {
+                    this.sounds.bad.play().catch(() => {});
+                }
+            }
+            
+            toggleHabitType(taskId) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                const task = day.tsks.find(t => t.id === taskId);
+                
+                const types = ['good', 'neutral', 'bad'];
+                const currentIndex = types.indexOf(task.tp);
+                task.tp = types[(currentIndex + 1) % types.length];
+                
+                this.render();
+                this.saveData(day);
+            }
+            
+            updateTaskName(taskId, name) {
+                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
+                const task = day.tsks.find(t => t.id === taskId);
+                
+                task.nm = name;
+                this.saveData(day);
+            }
+            
+            updateThought(taskId, content) {
+                const day = this.data.find(d => d.ths.some(th => th.tk_id === taskId));
+                const thought = day.ths.find(th => th.tk_id === taskId);
+                
+                thought.ct = content;
+                this.saveData(day);
+            }
+            
+            async exportDay(dayDate) {
+                const response = await fetch(`/api/export/${dayDate}`);
+                const data = await response.json();
+                
+                const blob = new Blob([data.md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `habits-${dayDate}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            startAutoSave() {
+                setInterval(async () => {
+                    for (const day of this.data) {
+                        if (day.ed) {
+                            await this.saveData(day);
+                        }
+                    }
+                }, 10000);
+            }
+        }
+        
+        const app = new HabitTracker();
+    </script>
+</body>
+</html>

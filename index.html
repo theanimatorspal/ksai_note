@@ -27,7 +27,7 @@
 
           body {
                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-               background-color: #f5f5f5;
+               background-color: #040404;
                height: 100vh;
                overflow: hidden;
           }
@@ -189,7 +189,7 @@
           .hamburger-btn {
                position: absolute;
                top: 20px;
-               left: 20px;
+               left: 70px;
                z-index: 1001;
                display: flex;
                flex-direction: column;
@@ -211,7 +211,7 @@
           }
 
           .content-header {
-               padding: 20px;
+               padding: 5px 20px 5px 60px;
                padding-left: 60px;
                background-color: #f8f9fa;
                border-bottom: 1px solid #e5e5e5;
@@ -302,6 +302,14 @@
                transform: scale(1.15);
           }
 
+          /* ADD THIS NEW RULE */
+          .font-tools-container {
+               display: flex;
+               flex-direction: column;
+               gap: 8px;
+               /* This creates space between the dropdown and the buttons */
+          }
+
           .control-group label,
           .font-control label {
                color: #cccccc;
@@ -362,6 +370,38 @@
                cursor: pointer;
           }
 
+          /* ADD THESE STYLES FOR THE NEW BUTTONS */
+          .font-size-controls {
+               display: flex;
+               align-items: center;
+               gap: 5px;
+               background-color: #3e3e42;
+               padding: 4px;
+               border-radius: 5px;
+          }
+
+          .size-btn {
+               background: none;
+               border: 1px solid transparent;
+               color: #ccc;
+               padding: 4px 10px;
+               cursor: pointer;
+               border-radius: 3px;
+               font-family: 'Segoe UI', sans-serif;
+               font-weight: 600;
+               font-size: 14px;
+               line-height: 1;
+          }
+
+          .size-btn:hover:not(.active) {
+               background-color: #555;
+          }
+
+          .size-btn.active {
+               background-color: #0078d4;
+               color: white;
+          }
+
           .mode-btn {
                padding: 8px 16px;
                border: 1px solid #ddd;
@@ -386,6 +426,7 @@
                display: flex;
                flex-direction: column;
                overflow: hidden;
+               background-color: #1e1e1e;
           }
 
           .text-editor {
@@ -404,11 +445,12 @@
                flex: 1;
                height: 100%;
                min-height: 500px;
+               background-color: #1e1e1e;
           }
 
           .empty-state {
                text-align: center;
-               color: #666;
+               color: #fff;
                margin-top: 100px;
                padding: 20px;
           }
@@ -512,6 +554,37 @@
           #excalidrawContainer canvas {
                cursor: default !important;
           }
+
+          .sidebar-header h1 {
+               font-size: 16px;
+               /* Was 18px */
+               margin-bottom: 15px;
+          }
+
+          .add-notebook-btn {
+               /* ... */
+               font-size: 12px;
+               /* Was 13px */
+          }
+
+          .section-item {
+               /* ... */
+               font-size: 12px;
+               /* Was 13px */
+          }
+
+          .subsection-item {
+               /* ... */
+               font-size: 11px;
+               /* Was 12px */
+          }
+
+          .page-title {
+               font-size: 20px;
+               /* Was 22px */
+               font-weight: 600;
+               /* ... */
+          }
      </style>
 </head>
 
@@ -520,7 +593,11 @@
           <div class="sidebar">
                <div class="sidebar-header">
                     <h1>📓 Dannote </h1>
-                    <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
+                    <!-- <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button> -->
+                    <div class="header-actions" style="display: flex; gap: 10px;">
+                         <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
+                         <button class="add-notebook-btn" onclick="app.openFilePicker()">Open...</button>
+                    </div>
                </div>
                <div class="notebook-list" id="notebookList"></div>
           </div>
@@ -531,31 +608,6 @@
                     <span></span>
                     <span></span>
                </button>
-               <div class="content-header" id="contentHeader" style="display: none;">
-                    <div class="header-left">
-                         <div class="breadcrumb" id="breadcrumb"></div>
-                         <div class="page-title" id="pageTitle"></div>
-                    </div>
-                    <div class="header-right">
-                         <div class="stroke-controls">
-                              <div class="control-group">
-                                   <label for="strokeWidthSlider">🎨 Stroke Width:</label>
-                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.01" value="0.3">
-                                   <span id="strokeWidthValue">0.3</span>
-                              </div>
-                              <div class="color-palette" id="colorPalette"></div>
-                         </div>
-                         <div class="font-control">
-                              <select id="fontFamilySelect">
-                                   <option value="1">Hand-drawn</option>
-                                   <option value="2">Normal</option>
-                                   <option value="3">Code</option>
-                                   <option value="4" selected>System Font</option>
-                              </select>
-                              <label for="fontFamilySelect">🔽</label>
-                         </div>
-                    </div>
-               </div>
 
 
                <div class="editor-container">
@@ -564,6 +616,41 @@
                          <p>Create or select a notebook to get started and drawings</p>
                     </div>
                     <div class="excalidraw-container hidden" id="excalidrawContainer"></div>
+               </div>
+
+               <div class="content-header" id="contentHeader" style="display: none;">
+                    <div class="header-left">
+                         <div class="breadcrumb" id="breadcrumb"></div>
+                         <div class="page-title" id="pageTitle"></div>
+                    </div>
+                    <div class="header-right">
+                         <div class="stroke-controls">
+                              <div class="control-group">
+                                   <label for="strokeWidthSlider">🎨Stroke:</label>
+                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.01" value="0.3">
+                                   <span id="strokeWidthValue">0.3</span>
+                              </div>
+                              <div class="color-palette" id="colorPalette"></div>
+                         </div>
+                         <div class="font-tools-container">
+                              <div class="font-control">
+                                   <select id="fontFamilySelect">
+                                        <option value="1">Hand-drawn</option>
+                                        <option value="2">Normal</option>
+                                        <option value="3">Code</option>
+                                        <option value="4" selected>System Font</option>
+                                   </select>
+                                   <label for="fontFamilySelect">🔽</label>
+                              </div>
+                              <div class="font-size-controls">
+                                   <button class="size-btn" onclick="app.setFontSize(58, this)" value="58">H1</button>
+                                   <button class="size-btn" onclick="app.setFontSize(48, this)" value="48">H2</button>
+                                   <button class="size-btn" onclick="app.setFontSize(38, this)" value="38">H3</button>
+                                   <button class="size-btn active" onclick="app.setFontSize(28, this)"
+                                        value="28">N</button>
+                              </div>
+                         </div>
+                    </div>
                </div>
           </div>
      </div>
@@ -634,6 +721,8 @@
                     this.expandedSections = JSON.parse(localStorage.getItem('expandedSections') || '[]');
                     this.excalidrawAPI = null;
                     this.excalidrawRoot = null;
+                    this.isLoading = false;
+
 
                     this.init();
                }
@@ -845,7 +934,7 @@
                             </span>
                             <div class="notebook-actions">
                                 <button class="action-btn" onclick="app.showCreateSectionModal('${notebook.id}')" title="Add Section">+</button>
-                                <button class="action-btn" onclick="app.exportNotebook('${notebook.id}')" title="Export To Html">📤</button>
+                                <button class="action-btn" onclick="app.showExportOptions('${notebook.id}')" title="Export">📤</button>
                                 <button class="action-btn" onclick="app.deleteNotebook('${notebook.id}')" title="Delete">×</button>
                             </div>
                         </div>
@@ -867,6 +956,7 @@
                                     <div class="notebook-actions">
                                         <button class="action-btn" onclick="event.stopPropagation(); app.showCreateSubsectionModal('${notebook.id}', '${section.id}')" title="Add Subsection">+</button>
                                         <button class="action-btn" onclick="event.stopPropagation(); app.deleteSection('${notebook.id}', '${section.id}')" title="Delete">×</button>
+                                        <button class="action-btn" onclick="event.stopPropagation(); app.showMoveUI('section', '${notebook.id}', '${section.id}')" title="Move">➔</button>
                                     </div>
                                 </div>
                             `;
@@ -882,6 +972,7 @@
                                         <span onclick="app.selectSubsection('${notebook.id}', '${section.id}', '${subsection.id}')">📋 ${subsection.name}</span>
                                         <div class="notebook-actions">
                                             <button class="action-btn" onclick="event.stopPropagation(); app.deleteSubsection('${notebook.id}', '${section.id}', '${subsection.id}')" title="Delete">×</button>
+                                            <button class="action-btn" onclick="event.stopPropagation(); app.showMoveUI('subsection', '${notebook.id}', '${section.id}', '${subsection.id}')" title="Move">➔</button>
                                         </div>
                                     `;
                                              subsectionList.appendChild(subsectionElement);
@@ -901,6 +992,10 @@
                }
 
                selectSection(notebookId, sectionId) {
+                    if (this.isLoading) return; // ADD THIS LINE
+                    this.deinitializeDrawMode()
+                    this.isLoading = true;      // ADD THIS LINE
+
                     this.saveCurrentContent();
                     this.currentNotebook = notebookId;
                     this.currentSection = sectionId;
@@ -916,6 +1011,10 @@
                }
 
                selectSubsection(notebookId, sectionId, subsectionId) {
+                    if (this.isLoading) return; // ADD THIS LINE
+                    this.deinitializeDrawMode();
+                    this.isLoading = true;      // ADD THIS LINE
+
                     this.saveCurrentContent();
                     this.currentNotebook = notebookId;
                     this.currentSection = sectionId;
@@ -953,19 +1052,28 @@
                     const emptyState = document.getElementById('emptyState');
                     emptyState.style.display = 'none';
 
-                    this.initializeDrawMode();
-
+                    // this.initializeDrawMode();
                     if (item.drawingData) {
                          this.initializeExcalidraw(item.drawingData);
                     } else {
                          this.initializeExcalidraw();
                     }
+
                }
 
                initializeDrawMode() {
                     this.currentMode = 'draw';
                     const excalidrawContainer = document.getElementById('excalidrawContainer');
                     excalidrawContainer.classList.remove('hidden');
+                    if (!this.excalidrawRoot) {
+                         this.initializeExcalidraw();
+                    }
+               }
+
+               deinitializeDrawMode() {
+                    this.currentMode = 'draw';
+                    const excalidrawContainer = document.getElementById('excalidrawContainer');
+                    excalidrawContainer.classList.add('hidden');
                     if (!this.excalidrawRoot) {
                          this.initializeExcalidraw();
                     }
@@ -1000,11 +1108,13 @@
                                                        appState: {
                                                             // Only include serializable properties, exclude collaborators entirely
                                                             viewBackgroundColor: initialData.appState?.viewBackgroundColor || "#ffffff",
-                                                            currentItemStrokeColor: initialData.appState?.currentItemStrokeColor || "#000000",
+                                                            // currentItemStrokeColor: initialData.appState?.currentItemStrokeColor || "#000000",
+                                                            currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
                                                             currentItemBackgroundColor: initialData.appState?.currentItemBackgroundColor || "transparent",
                                                             currentItemFillStyle: initialData.appState?.currentItemFillStyle || "solid",
                                                             currentItemStrokeWidth: parseFloat(document.getElementById("strokeWidthSlider")?.value || 0.1),
                                                             currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
+                                                            currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
                                                             currentItemStrokeStyle: initialData.appState?.currentItemStrokeStyle || "solid",
                                                             currentItemRoughness: initialData.appState?.currentItemRoughness || 1,
                                                             currentItemOpacity: initialData.appState?.currentItemOpacity || 100,
@@ -1012,11 +1122,14 @@
                                                             colorPalette: initialData.appState?.colorPalette || {},
                                                             zoom: initialData.appState?.zoom || { value: 1 },
                                                             scrollX: initialData.appState?.scrollX || 0,
-                                                            scrollY: initialData.appState?.scrollY || 0
+                                                            scrollY: initialData.appState?.scrollY || 0,
+                                                            theme: 'dark'
                                                        }
                                                   };
 
                                                   excalidrawAPI.updateScene(sceneData);
+                                                  this.isLoading = false;
+                                                  this.initializeDrawMode()
                                              } catch (error) {
                                                   console.warn('Failed to load initial drawing data:', error);
                                                   // Initialize with completely empty scene if loading fails
@@ -1039,14 +1152,18 @@
                                    // Auto-save drawing data
                                    self.saveDrawingData(elements, appState);
                               },
-
+                              UIOptions: {
+                                   canvasActions: {
+                                        changeViewBackgroundColor: false
+                                   }
+                              },
                               initialData: {
                                    appState: {
                                         currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.1),
-                                        // ADD THIS LINE
-                                        currentItemStrokeColor: '#000000',
+                                        currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
                                         theme: 'dark',
                                         currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
+                                        currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
                                         zenModeEnabled: true
                                    }
                               }
@@ -1094,6 +1211,100 @@
                                    currentItemFontFamily: numericFont
                               }
                          });
+                    }
+               }
+
+               // ADD THIS FUNCTION to control text size
+               setFontSize(size, clickedButton) {
+                    if (this.excalidrawAPI) {
+                         this.excalidrawAPI.updateScene({
+                              appState: {
+                                   currentItemFontSize: size
+                              }
+                         });
+                    }
+
+                    // Update the 'active' class on the UI buttons
+                    document.querySelectorAll('.size-btn').forEach(btn => {
+                         btn.classList.remove('active');
+                    });
+                    clickedButton.classList.add('active');
+               }
+
+               // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
+               showMoveUI(type, notebookId, sectionId, subsectionId = null) {
+                    const otherNotebooks = this.notebooks.filter(n => n.id !== notebookId);
+
+                    if (otherNotebooks.length === 0) {
+                         alert("No other notebooks to move to.");
+                         return;
+                    }
+
+                    const notebookList = otherNotebooks.map((n, i) => `${i + 1}: ${n.name}`).join('\n');
+                    const choice = prompt(`Enter the number of the notebook to move this ${type} to:\n\n${notebookList}`);
+
+                    if (choice === null) return; // User cancelled
+
+                    const choiceIndex = parseInt(choice, 10) - 1;
+                    if (isNaN(choiceIndex) || choiceIndex < 0 || choiceIndex >= otherNotebooks.length) {
+                         alert("Invalid selection.");
+                         return;
+                    }
+
+                    const targetNotebook = otherNotebooks[choiceIndex];
+                    this.moveItem(type, notebookId, targetNotebook.id, sectionId, subsectionId);
+               }
+
+               // ADD THIS FUNCTION: Handles the actual data manipulation for the move
+               moveItem(type, sourceNotebookId, targetNotebookId, sectionId, subsectionId) {
+                    const sourceNotebook = this.notebooks.find(n => n.id === sourceNotebookId);
+                    const targetNotebook = this.notebooks.find(n => n.id === targetNotebookId);
+
+                    if (!sourceNotebook || !targetNotebook) return;
+
+                    let itemToMove = null;
+                    let itemIsActive = false;
+
+                    if (type === 'section') {
+                         const sectionIndex = sourceNotebook.sections.findIndex(s => s.id === sectionId);
+                         if (sectionIndex > -1) {
+                              itemToMove = sourceNotebook.sections[sectionIndex];
+                              sourceNotebook.sections.splice(sectionIndex, 1);
+                              targetNotebook.sections.push(itemToMove);
+                              if (this.currentSection === sectionId) itemIsActive = true;
+                         }
+                    } else if (type === 'subsection') {
+                         const sourceSection = sourceNotebook.sections.find(s => s.id === sectionId);
+                         if (sourceSection) {
+                              const subsectionIndex = sourceSection.subsections.findIndex(sub => sub.id === subsectionId);
+                              if (subsectionIndex > -1) {
+                                   const subsection = sourceSection.subsections[subsectionIndex];
+                                   // Promote the subsection to a full section in the new notebook
+                                   itemToMove = {
+                                        id: subsection.id,
+                                        name: subsection.name,
+                                        textContent: subsection.textContent,
+                                        drawingData: subsection.drawingData,
+                                        createdAt: subsection.createdAt,
+                                        subsections: [] // It's now a top-level section
+                                   };
+                                   sourceSection.subsections.splice(subsectionIndex, 1);
+                                   targetNotebook.sections.push(itemToMove);
+                                   if (this.currentSubsection === subsectionId) itemIsActive = true;
+                              }
+                         }
+                    }
+
+                    if (itemToMove) {
+                         // If the moved item was being viewed, reset the editor to the empty state
+                         if (itemIsActive) {
+                              this.showEmptyState();
+                              // Also update header to avoid showing old info
+                              document.getElementById('contentHeader').style.display = 'none';
+                         }
+                         this.saveToStorage();
+                         this.renderNotebooks();
+                         alert(`Successfully moved '${itemToMove.name}' to '${targetNotebook.name}'.`);
                     }
                }
 
@@ -1171,6 +1382,94 @@
                     }
 
                     this.saveToStorage();
+               }
+
+               // ADD THIS FUNCTION: Asks user for export format
+               showExportOptions(notebookId) {
+                    const choice = confirm(
+                         "Choose an export format:\n\nPress 'OK' for .dannote format.\nPress 'Cancel' for .html format."
+                    );
+                    if (choice) {
+                         this.exportToBinaryBlobFile(notebookId);
+                    } else {
+                         this.exportNotebook(notebookId); // This is your existing HTML export
+                    }
+               }
+
+               // ADD THIS FUNCTION: Creates the binary blob from notebook data
+               toBinaryBlob(notebookId) {
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    if (!notebook) {
+                         console.error("Notebook not found for blob creation");
+                         return null;
+                    }
+                    // Convert the notebook object to a JSON string
+                    const jsonString = JSON.stringify(notebook);
+                    // Create a Blob from the string. A Blob is an object that represents raw, immutable data.
+                    return new Blob([jsonString], { type: "application/json" });
+               }
+
+               // ADD THIS FUNCTION: Handles downloading the .dannote file
+               exportToBinaryBlobFile(notebookId) {
+                    const blob = this.toBinaryBlob(notebookId);
+                    if (!blob) return;
+
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.dannote`;
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+               }
+
+               // ADD THIS FUNCTION: Opens the file picker to select a .dannote file
+               openFilePicker() {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.dannote'; // Only allow .dannote files
+                    input.onchange = event => {
+                         const file = event.target.files[0];
+                         if (file) {
+                              this.importFromBinaryBlob(file);
+                         }
+                    };
+                    input.click();
+               }
+
+               // ADD THIS FUNCTION: Reads the file and imports the notebook
+               importFromBinaryBlob(file) {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                         try {
+                              const notebookData = JSON.parse(event.target.result);
+
+                              // Basic validation to ensure it's a valid notebook object
+                              if (notebookData && notebookData.id && notebookData.name && Array.isArray(notebookData.sections)) {
+
+                                   // Check if a notebook with the same ID already exists
+                                   if (this.notebooks.some(n => n.id === notebookData.id)) {
+                                        alert(`A notebook named "${notebookData.name}" (or with the same ID) already exists.`);
+                                        return;
+                                   }
+
+                                   this.notebooks.push(notebookData);
+                                   this.saveToStorage();
+                                   this.renderNotebooks();
+                                   alert(`Successfully imported notebook: "${notebookData.name}"`);
+                              } else {
+                                   alert("Invalid or corrupt .dannote file.");
+                              }
+                         } catch (e) {
+                              console.error("Failed to parse .dannote file:", e);
+                              alert("Failed to read or parse the selected file.");
+                         }
+                    };
+                    reader.readAsText(file);
                }
 
                exportNotebook(notebookId) {
@@ -1380,7 +1679,7 @@
 
                          .nav-sidebar .subsection {
                               margin-left: 1.5rem;
-                              font-size: 0.3rem;
+                              font-size: 0.5rem;
                          }
 
                          /* --- MAIN CONTENT STYLES --- */

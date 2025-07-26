@@ -821,7 +821,6 @@
                               id: this.generateId(),
                               name: name,
                               subsections: [],
-                              textContent: '',
                               drawingData: null,
                               createdAt: new Date().toISOString()
                          };
@@ -840,7 +839,6 @@
                               const subsection = {
                                    id: this.generateId(),
                                    name: name,
-                                   textContent: '',
                                    drawingData: null,
                                    createdAt: new Date().toISOString()
                               };
@@ -1074,17 +1072,12 @@
                     this.currentMode = 'draw';
                     const excalidrawContainer = document.getElementById('excalidrawContainer');
                     excalidrawContainer.classList.add('hidden');
-                    if (!this.excalidrawRoot) {
-                         this.initializeExcalidraw();
-                    }
                }
 
                // Replace the initializeExcalidraw method in the Dannote class with this completely fixed version:
-
+               // Replace your existing initializeExcalidraw function with this one.
                initializeExcalidraw(initialData = null) {
                     const container = document.getElementById('excalidrawContainer');
-
-                    // Clear previous instance
                     if (this.excalidrawRoot) {
                          this.excalidrawRoot.unmount();
                     }
@@ -1092,86 +1085,50 @@
                     // Store reference to this for use in component
                     const self = this;
 
-                    // Create new Excalidraw instance - DO NOT pass initialData as prop
-                    const ExcalidrawComponent = () => {
-                         const [excalidrawAPI, setExcalidrawAPI] = React.useState(null);
-
-                         React.useEffect(() => {
-                              if (excalidrawAPI) {
-                                   // Load initial data after API is ready
-                                   if (initialData && initialData.elements) {
-                                        setTimeout(() => {
-                                             try {
-                                                  // Only pass elements and minimal appState
-                                                  const sceneData = {
-                                                       elements: initialData.elements || [],
-                                                       appState: {
-                                                            // Only include serializable properties, exclude collaborators entirely
-                                                            viewBackgroundColor: initialData.appState?.viewBackgroundColor || "#ffffff",
-                                                            // currentItemStrokeColor: initialData.appState?.currentItemStrokeColor || "#000000",
-                                                            currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
-                                                            currentItemBackgroundColor: initialData.appState?.currentItemBackgroundColor || "transparent",
-                                                            currentItemFillStyle: initialData.appState?.currentItemFillStyle || "solid",
-                                                            currentItemStrokeWidth: parseFloat(document.getElementById("strokeWidthSlider")?.value || 0.1),
-                                                            currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
-                                                            currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
-                                                            currentItemStrokeStyle: initialData.appState?.currentItemStrokeStyle || "solid",
-                                                            currentItemRoughness: initialData.appState?.currentItemRoughness || 1,
-                                                            currentItemOpacity: initialData.appState?.currentItemOpacity || 100,
-                                                            gridSize: initialData.appState?.gridSize || null,
-                                                            colorPalette: initialData.appState?.colorPalette || {},
-                                                            zoom: initialData.appState?.zoom || { value: 1 },
-                                                            scrollX: initialData.appState?.scrollX || 0,
-                                                            scrollY: initialData.appState?.scrollY || 0,
-                                                            theme: 'dark'
-                                                       }
-                                                  };
-
-                                                  excalidrawAPI.updateScene(sceneData);
-                                                  this.isLoading = false;
-                                                  this.initializeDrawMode()
-                                             } catch (error) {
-                                                  console.warn('Failed to load initial drawing data:', error);
-                                                  // Initialize with completely empty scene if loading fails
-                                                  excalidrawAPI.updateScene({
-                                                       elements: [],
-                                                       appState: {}
-                                                  });
-                                             }
-                                        }, 200); // Increased timeout to ensure full initialization
-                                   }
-                              }
-                         }, [excalidrawAPI]);
-
-                         return React.createElement(ExcalidrawLib.Excalidraw, {
-                              excalidrawAPI: (api) => {
-                                   setExcalidrawAPI(api);
-                                   self.excalidrawAPI = api;
-                              },
-                              onChange: (elements, appState) => {
-                                   // Auto-save drawing data
-                                   self.saveDrawingData(elements, appState);
-                              },
-                              UIOptions: {
-                                   canvasActions: {
-                                        changeViewBackgroundColor: false
-                                   }
-                              },
-                              initialData: {
-                                   appState: {
-                                        currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.1),
-                                        currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
-                                        theme: 'dark',
-                                        currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
-                                        currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
-                                        zenModeEnabled: true
-                                   }
-                              }
-                         });
+                    // 1. Prepare the COMPLETE initial data object upfront.
+                    const fullInitialData = {
+                         elements: initialData?.elements || [],
+                         files: initialData?.files || {}, // Pass files here!
+                         appState: {
+                              // Your default settings
+                              theme: 'dark',
+                              zenModeEnabled: true,
+                              currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.3),
+                              currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
+                              currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
+                              currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
+                              // Merge with saved appState, if it exists
+                              ...(initialData?.appState || {})
+                         }
                     };
 
+                    // 2. Create the React component, passing the full data object.
+                    const ExcalidrawComponent = React.createElement(ExcalidrawLib.Excalidraw, {
+                         excalidrawAPI: (api) => {
+                              self.excalidrawAPI = api;
+                         },
+                         onChange: (elements, appState) => {
+                              // Auto-save still works the same.
+                              self.saveDrawingData(elements, appState);
+                         },
+                         UIOptions: {
+                              canvasActions: {
+                                   changeViewBackgroundColor: false
+                              }
+                         },
+                         // Pass the complete data object here.
+                         initialData: fullInitialData
+                    });
+
+                    // 3. Render the component.
                     this.excalidrawRoot = createRoot(container);
-                    this.excalidrawRoot.render(React.createElement(ExcalidrawComponent));
+                    this.excalidrawRoot.render(ExcalidrawComponent);
+
+                    // Show the container and set the loading flag
+                    setTimeout(() => {
+                         this.isLoading = false;
+                         this.initializeDrawMode();
+                    }, 200)
                }
 
 
@@ -1310,7 +1267,9 @@
 
                // Also update the saveDrawingData method to ensure proper data structure:
                saveDrawingData(elements, appState) {
-                    if (!this.currentEditingId) return;
+                    if (!this.currentEditingId || !this.excalidrawAPI) return;
+
+                    const files = this.excalidrawAPI.getFiles();
 
                     // Create a clean appState object with only serializable properties
                     const cleanAppState = {
@@ -1333,7 +1292,8 @@
 
                     const drawingData = {
                          elements: elements,
-                         appState: cleanAppState
+                         appState: cleanAppState,
+                         files: files
                     };
 
                     if (this.currentSubsection) {
@@ -1347,17 +1307,16 @@
                          section.drawingData = drawingData;
                     }
 
+
                     this.saveToStorage();
                }
 
 
                showEmptyState() {
-                    const textEditor = document.getElementById('textEditor');
                     const excalidrawContainer = document.getElementById('excalidrawContainer');
                     const emptyState = document.getElementById('emptyState');
                     const contentHeader = document.getElementById('contentHeader');
 
-                    textEditor.classList.add('hidden');
                     excalidrawContainer.classList.add('hidden');
                     contentHeader.style.display = 'flex';
                     emptyState.style.display = 'block';
@@ -1385,14 +1344,33 @@
                }
 
                // ADD THIS FUNCTION: Asks user for export format
+               // In the Dannote class
                showExportOptions(notebookId) {
-                    const choice = confirm(
-                         "Choose an export format:\n\nPress 'OK' for .dannote format.\nPress 'Cancel' for .html format."
+                    const choice = prompt(
+                         "Choose an export format:\n\n" +
+                         "Enter '1' to export as .html\n" +
+                         "Enter '2' to export as .dannote"
                     );
-                    if (choice) {
-                         this.exportToBinaryBlobFile(notebookId);
-                    } else {
-                         this.exportNotebook(notebookId); // This is your existing HTML export
+
+                    // If the user presses "Cancel" or closes the prompt
+                    if (choice === null) {
+                         return; // Exit without doing anything
+                    }
+
+                    // Process the user's input
+                    switch (choice.trim()) {
+                         case '1':
+                              // Export as HTML
+                              this.exportNotebook(notebookId);
+                              break;
+                         case '2':
+                              // Export as .dannote file
+                              this.exportToBinaryBlobFile(notebookId);
+                              break;
+                         default:
+                              // Handle any other input
+                              alert("Invalid choice. Please enter '1' or '2'.");
+                              break;
                     }
                }
 
@@ -1472,23 +1450,34 @@
                     reader.readAsText(file);
                }
 
+               // In the Dannote class
                exportNotebook(notebookId) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (!notebook) return;
 
-                    // --- The reliable template cloning method ---
-                    const templateNode = document.getElementById('export-template');
-                    // 1. Clone the template content properly. This creates a document fragment.
-                    const templateClone = templateNode.content.cloneNode(true);
+                    // --- NEW: Aggregate all files from the entire notebook ---
+                    const allFiles = {};
+                    notebook.sections.forEach(section => {
+                         if (section.drawingData && section.drawingData.files) {
+                              Object.assign(allFiles, section.drawingData.files);
+                         }
+                         if (section.subsections && section.subsections.length > 0) {
+                              section.subsections.forEach(subsection => {
+                                   if (subsection.drawingData && subsection.drawingData.files) {
+                                        Object.assign(allFiles, subsection.drawingData.files);
+                                   }
+                              });
+                         }
+                    });
+                    const allFilesJSON = JSON.stringify(allFiles);
+                    // --- END NEW ---
 
-                    // 2. Create a temporary, disconnected div to hold the cloned content.
+                    const templateNode = document.getElementById('export-template');
+                    const templateClone = templateNode.content.cloneNode(true);
                     const tempDiv = document.createElement('div');
                     tempDiv.appendChild(templateClone);
-
-                    // 3. Now, safely get the full HTML string from the temporary div.
                     let htmlTemplate = tempDiv.innerHTML;
 
-                    // --- The rest of the function remains the same ---
                     htmlTemplate = htmlTemplate.replace(/<temphtml/g, '<html').replace(/<\/temphtml>/g, '</html>');
                     htmlTemplate = htmlTemplate.replace(/<temphead/g, '<head').replace(/<\/temphead>/g, '</head>');
                     htmlTemplate = htmlTemplate.replace(/<tempbody/g, '<body').replace(/<\/tempbody>/g, '</body>');
@@ -1496,7 +1485,10 @@
                     const pageTitle = notebook.name;
                     const notebookDataJSON = JSON.stringify(notebook);
                     htmlTemplate = htmlTemplate.replace('__PAGE_TITLE__', pageTitle);
-                    htmlTemplate = htmlTemplate.replace('\'__NOTEBOOK_DATA_JSON__\'', notebookDataJSON); // Note the quotes
+                    htmlTemplate = htmlTemplate.replace('\'__NOTEBOOK_DATA_JSON__\'', notebookDataJSON);
+
+                    // --- NEW: Replace the new placeholder for the aggregated files ---
+                    htmlTemplate = htmlTemplate.replace('\'__ALL_FILES_JSON__\'', allFilesJSON);
 
                     const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
                     const blob = new Blob([htmlTemplate], { type: 'text/html' });
@@ -1509,6 +1501,7 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                }
+
 
                showCreateNotebookModal() {
                     document.getElementById('createNotebookModal').style.display = 'flex';
@@ -1772,17 +1765,19 @@
                          import React from "react";
                          import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
 
-                         const notebook = '__NOTEBOOK_DATA_JSON__'; // Placeholder
+                         const notebook = '__NOTEBOOK_DATA_JSON__'; // Notebook structure placeholder
+                         // --- NEW: This placeholder will hold all image data for the notebook ---
+                         const allFiles = '__ALL_FILES_JSON__'; // All files data placeholder
+
                          let excalidrawAPI = null;
                          let activeElement = null;
 
-                         // --- ADDED: Sidebar Toggle Functionality ---
+                         // --- Sidebar Toggle Functionality ---
                          const sidebar = document.getElementById('navSidebar');
                          const hamburgerBtn = document.getElementById('hamburger-btn');
                          hamburgerBtn.addEventListener('click', () => {
                               sidebar.classList.toggle('collapsed');
                          });
-                         // ---
 
                          function renderNavigation() {
                               const navContainer = document.getElementById('navSidebar');
@@ -1802,10 +1797,8 @@
                          }
 
                          window.loadPage = (type, sectionIndex, subsectionIndex) => {
-                              // --- MODIFIED: Show drawing area and hide welcome message ---
                               document.getElementById('welcome-message').classList.add('hidden');
                               document.getElementById('excalidraw-container').classList.remove('hidden');
-                              // ---
 
                               let item;
                               let itemId;
@@ -1821,27 +1814,38 @@
                               if (activeElement) { activeElement.classList.add('active'); }
 
                               const drawingData = item.drawingData || { elements: [], appState: {} };
-                              drawingData.appState = { ...drawingData.appState, theme: 'dark' };
 
                               if (excalidrawAPI) {
-                                   setTimeout(() => { excalidrawAPI.updateScene(drawingData); }, 100);
+                                   // --- MODIFIED: Always include the master 'allFiles' object in the scene update ---
+                                   // This ensures Excalidraw can find the data for any image on the current page.
+                                   const sceneToLoad = {
+                                        elements: drawingData.elements,
+                                        appState: { ...(drawingData.appState || {}), theme: 'dark' },
+                                        files: allFiles // Use the master files object here!
+                                   };
+                                   // Use a short timeout to ensure the UI updates before the scene loads
+                                   setTimeout(() => { excalidrawAPI.updateScene(sceneToLoad); }, 50);
                               }
                          };
 
                          const container = document.getElementById('excalidraw-container');
                          const root = createRoot(container);
+
+                         // --- MODIFIED: Pass the master files object on initial creation ---
+                         // This makes the initial state aware of all possible images.
                          const ExcalidrawComponent = () => React.createElement(ExcalidrawLib.Excalidraw, {
                               excalidrawAPI: (api) => { excalidrawAPI = api; },
                               viewModeEnabled: true,
-                              initialData: { appState: { theme: 'dark' } }
+                              initialData: {
+                                   appState: { theme: 'dark' },
+                                   files: allFiles // Pass the master files object here too!
+                              }
                          });
 
                          root.render(React.createElement(ExcalidrawComponent));
                          renderNavigation();
-
-                         // REMOVED: The automatic loading of the first page to show welcome message instead.
-
                     </script>
+
                </tempbody>
           </temphtml>
      </template>

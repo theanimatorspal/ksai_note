@@ -561,7 +561,7 @@
                <div class="editor-container">
                     <div class="empty-state" id="emptyState">
                          <h2>Welcome to Dannote</h2>
-                         <p>Create a notebook to get started with text notes and drawings</p>
+                         <p>Create or select a notebook to get started and drawings</p>
                     </div>
                     <div class="excalidraw-container hidden" id="excalidrawContainer"></div>
                </div>
@@ -845,6 +845,7 @@
                             </span>
                             <div class="notebook-actions">
                                 <button class="action-btn" onclick="app.showCreateSectionModal('${notebook.id}')" title="Add Section">+</button>
+                                <button class="action-btn" onclick="app.exportNotebook('${notebook.id}')" title="Export To Html">📤</button>
                                 <button class="action-btn" onclick="app.deleteNotebook('${notebook.id}')" title="Delete">×</button>
                             </div>
                         </div>
@@ -1138,6 +1139,7 @@
                     this.saveToStorage();
                }
 
+
                showEmptyState() {
                     const textEditor = document.getElementById('textEditor');
                     const excalidrawContainer = document.getElementById('excalidrawContainer');
@@ -1171,6 +1173,44 @@
                     this.saveToStorage();
                }
 
+               exportNotebook(notebookId) {
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    if (!notebook) return;
+
+                    // --- The reliable template cloning method ---
+                    const templateNode = document.getElementById('export-template');
+                    // 1. Clone the template content properly. This creates a document fragment.
+                    const templateClone = templateNode.content.cloneNode(true);
+
+                    // 2. Create a temporary, disconnected div to hold the cloned content.
+                    const tempDiv = document.createElement('div');
+                    tempDiv.appendChild(templateClone);
+
+                    // 3. Now, safely get the full HTML string from the temporary div.
+                    let htmlTemplate = tempDiv.innerHTML;
+
+                    // --- The rest of the function remains the same ---
+                    htmlTemplate = htmlTemplate.replace(/<temphtml/g, '<html').replace(/<\/temphtml>/g, '</html>');
+                    htmlTemplate = htmlTemplate.replace(/<temphead/g, '<head').replace(/<\/temphead>/g, '</head>');
+                    htmlTemplate = htmlTemplate.replace(/<tempbody/g, '<body').replace(/<\/tempbody>/g, '</body>');
+
+                    const pageTitle = notebook.name;
+                    const notebookDataJSON = JSON.stringify(notebook);
+                    htmlTemplate = htmlTemplate.replace('__PAGE_TITLE__', pageTitle);
+                    htmlTemplate = htmlTemplate.replace('\'__NOTEBOOK_DATA_JSON__\'', notebookDataJSON); // Note the quotes
+
+                    const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+                    const blob = new Blob([htmlTemplate], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+               }
+
                showCreateNotebookModal() {
                     document.getElementById('createNotebookModal').style.display = 'flex';
                     document.getElementById('notebookName').focus();
@@ -1191,7 +1231,7 @@
 
                closeModal(modalId) {
                     document.getElementById(modalId).style.display = 'none';
-                    const inputs = document.querySelectorAll(`#${modalId} input[type="text"]`);
+                    const inputs = document.querySelectorAll(`#${modalId} input[type = "text"]`);
                     inputs.forEach(input => input.value = '');
                }
           }
@@ -1255,6 +1295,258 @@
                }
           });
      </script>
+
+     <template id="export-template">
+          <temphtml lang="en">
+               <temphead>
+                    <meta charset="UTF-8">
+                    <title>__PAGE_TITLE__</title>
+                    <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css" />
+                    <script>
+                         window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
+                    </script>
+                    <script type="importmap">
+                 { "imports": {
+                     "react": "https://esm.sh/react@19.0.0",
+                     "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+                     "react-dom": "https://esm.sh/react-dom@19.0.0"
+                 } }
+             </script>
+                    <style>
+                         /* --- GENERAL STYLES --- */
+                         body {
+                              margin: 0;
+                              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                              display: flex;
+                              height: 100vh;
+                              background: #1e1e1e;
+                              color: #ccc;
+                              overflow: hidden;
+                         }
+
+                         /* --- SIDEBAR STYLES --- */
+                         .nav-sidebar {
+                              width: 150px;
+                              background: #252526;
+                              border-right: 1px solid #404040;
+                              overflow-y: auto;
+                              padding: 1rem;
+                              box-sizing: border-box;
+                              flex-shrink: 0;
+                              transition: width 0.3s ease, padding 0.3s ease;
+                         }
+
+                         .nav-sidebar.collapsed {
+                              width: 0;
+                              padding: 0;
+                              border-right: none;
+                         }
+
+                         /* ADDED: Collapsed state for sidebar */
+                         .nav-sidebar h1 {
+                              font-size: 0.5rem;
+                              margin: 0 0 1rem 0;
+                              color: #fff;
+                              padding-bottom: 1rem;
+                              border-bottom: 1px solid #404040;
+                              white-space: nowrap;
+                         }
+
+                         .nav-sidebar ul {
+                              list-style: none;
+                              padding: 0;
+                              margin: 0;
+                         }
+
+                         .nav-sidebar li {
+                              padding: 0.6rem;
+                              font-size: 0.6rem;
+                              cursor: pointer;
+                              border-radius: 5px;
+                              margin-bottom: 4px;
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                         }
+
+                         .nav-sidebar li:hover {
+                              background: #37373d;
+                         }
+
+                         .nav-sidebar li.active {
+                              background: #094771;
+                              color: white;
+                         }
+
+                         .nav-sidebar .subsection {
+                              margin-left: 1.5rem;
+                              font-size: 0.3rem;
+                         }
+
+                         /* --- MAIN CONTENT STYLES --- */
+                         .main-view {
+                              position: relative;
+                              flex: 1;
+                              display: flex;
+                              flex-direction: column;
+                         }
+
+                         #excalidraw-container {
+                              flex: 1;
+                         }
+
+                         .hidden {
+                              display: none !important;
+                         }
+
+                         /* ADDED: Hidden helper class */
+
+                         /* --- WELCOME MESSAGE STYLES (ADDED) --- */
+                         #welcome-message {
+                              display: flex;
+                              flex-direction: column;
+                              justify-content: center;
+                              align-items: center;
+                              height: 100%;
+                              text-align: center;
+                              color: #888;
+                         }
+
+                         #welcome-message h2 {
+                              margin: 0;
+                              font-size: 24px;
+                         }
+
+                         #welcome-message p {
+                              margin-top: 10px;
+                              font-size: 16px;
+                         }
+
+                         /* --- HAMBURGER BUTTON STYLES (ADDED) --- */
+                         #hamburger-btn {
+                              position: absolute;
+                              bottom: 15px;
+                              left: 15px;
+                              z-index: 1001;
+                              background: #333;
+                              border: 1px solid #555;
+                              border-radius: 5px;
+                              width: 40px;
+                              height: 40px;
+                              cursor: pointer;
+                              display: flex;
+                              flex-direction: column;
+                              justify-content: center;
+                              align-items: center;
+                              gap: 5px;
+                              padding: 8px;
+                         }
+
+                         #hamburger-btn span {
+                              display: block;
+                              width: 100%;
+                              height: 2px;
+                              background-color: #ccc;
+                              border-radius: 2px;
+                              transition: transform 0.3s ease, opacity 0.3s ease;
+                         }
+                    </style>
+               </temphead>
+               <tempbody>
+                    <button id="hamburger-btn">
+                         <span></span>
+                         <span></span>
+                         <span></span>
+                    </button>
+
+                    <div class="nav-sidebar" id="navSidebar"></div>
+                    <div class="main-view">
+                         <div id="welcome-message">
+                              <h2>Welcome to Your Notebook</h2>
+                              <p>Select a page from the sidebar to view its content.</p>
+                         </div>
+                         <div id="excalidraw-container" class="hidden"></div>
+                    </div>
+
+                    <script type="module">
+                         import * as ExcalidrawLib from 'https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.js?external=react,react-dom';
+                         import React from "react";
+                         import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
+
+                         const notebook = '__NOTEBOOK_DATA_JSON__'; // Placeholder
+                         let excalidrawAPI = null;
+                         let activeElement = null;
+
+                         // --- ADDED: Sidebar Toggle Functionality ---
+                         const sidebar = document.getElementById('navSidebar');
+                         const hamburgerBtn = document.getElementById('hamburger-btn');
+                         hamburgerBtn.addEventListener('click', () => {
+                              sidebar.classList.toggle('collapsed');
+                         });
+                         // ---
+
+                         function renderNavigation() {
+                              const navContainer = document.getElementById('navSidebar');
+                              let navHtml = `<h1>📓 ${notebook.name}</h1><ul>`;
+                              notebook.sections.forEach((section, s_idx) => {
+                                   const sectionId = `page-${s_idx}`;
+                                   navHtml += `<li id="${sectionId}" onclick="window.loadPage('section', ${s_idx})">📄 ${section.name}</li>`;
+                                   if (section.subsections && section.subsections.length > 0) {
+                                        section.subsections.forEach((subsection, sub_idx) => {
+                                             const subsectionId = `page-${s_idx}-${sub_idx}`;
+                                             navHtml += `<li class="subsection" id="${subsectionId}" onclick="window.loadPage('subsection', ${s_idx}, ${sub_idx})">📋 ${subsection.name}</li>`;
+                                        });
+                                   }
+                              });
+                              navHtml += '</ul>';
+                              navContainer.innerHTML = navHtml;
+                         }
+
+                         window.loadPage = (type, sectionIndex, subsectionIndex) => {
+                              // --- MODIFIED: Show drawing area and hide welcome message ---
+                              document.getElementById('welcome-message').classList.add('hidden');
+                              document.getElementById('excalidraw-container').classList.remove('hidden');
+                              // ---
+
+                              let item;
+                              let itemId;
+                              if (type === 'section') {
+                                   item = notebook.sections[sectionIndex];
+                                   itemId = 'page-' + sectionIndex;
+                              } else {
+                                   item = notebook.sections[sectionIndex].subsections[subsectionIndex];
+                                   itemId = 'page-' + sectionIndex + '-' + subsectionIndex;
+                              }
+                              if (activeElement) { activeElement.classList.remove('active'); }
+                              activeElement = document.getElementById(itemId);
+                              if (activeElement) { activeElement.classList.add('active'); }
+
+                              const drawingData = item.drawingData || { elements: [], appState: {} };
+                              drawingData.appState = { ...drawingData.appState, theme: 'dark' };
+
+                              if (excalidrawAPI) {
+                                   setTimeout(() => { excalidrawAPI.updateScene(drawingData); }, 100);
+                              }
+                         };
+
+                         const container = document.getElementById('excalidraw-container');
+                         const root = createRoot(container);
+                         const ExcalidrawComponent = () => React.createElement(ExcalidrawLib.Excalidraw, {
+                              excalidrawAPI: (api) => { excalidrawAPI = api; },
+                              viewModeEnabled: true,
+                              initialData: { appState: { theme: 'dark' } }
+                         });
+
+                         root.render(React.createElement(ExcalidrawComponent));
+                         renderNavigation();
+
+                         // REMOVED: The automatic loading of the first page to show welcome message instead.
+
+                    </script>
+               </tempbody>
+          </temphtml>
+     </template>
+
 </body>
 
 </html>

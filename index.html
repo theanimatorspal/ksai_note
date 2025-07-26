@@ -709,25 +709,102 @@
           import React from "react";
           import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
 
+          /**
+ * A class that mimics the storage API (getItem, setItem, removeItem)
+ * but uses IndexedDB for storage. This allows for storing much larger
+ * amounts of data asynchronously without blocking the main thread.
+ */
+          class IDBStorage {
+               constructor(dbName = 'dannote-storage', storeName = 'keyvaluepairs') {
+                    this.storeName = storeName;
+                    this.dbPromise = new Promise((resolve, reject) => {
+                         const request = indexedDB.open(dbName, 1);
+                         request.onupgradeneeded = event => {
+                              const db = event.target.result;
+                              if (!db.objectStoreNames.contains(this.storeName)) {
+                                   db.createObjectStore(this.storeName);
+                              }
+                         };
+                         request.onsuccess = event => resolve(event.target.result);
+                         request.onerror = event => reject(event.target.error);
+                    });
+               }
+
+               /**
+                * Helper method to get a transaction and object store.
+                * @param {IDBTransactionMode} mode - 'readonly' or 'readwrite'.
+                * @returns {Promise<IDBObjectStore>}
+                */
+               async #getStore(mode) {
+                    const db = await this.dbPromise;
+                    return db.transaction(this.storeName, mode).objectStore(this.storeName);
+               }
+
+               /**
+                * Retrieves an item from IndexedDB. Mimics storage.getItem.
+                * @param {string} key - The key of the item to retrieve.
+                * @returns {Promise<any>} The retrieved value, or undefined if not found.
+                */
+               async getItem(key) {
+                    const store = await this.#getStore('readonly');
+                    return new Promise((resolve, reject) => {
+                         const request = store.get(key);
+                         request.onsuccess = () => resolve(request.result);
+                         request.onerror = () => reject(request.error);
+                    });
+               }
+
+               /**
+                * Saves an item to IndexedDB. Mimics storage.setItem.
+                * @param {string} key - The key of the item to save.
+                * @param {any} value - The value to save.
+                * @returns {Promise<void>}
+                */
+               async setItem(key, value) {
+                    const store = await this.#getStore('readwrite');
+                    return new Promise((resolve, reject) => {
+                         const request = store.put(value, key);
+                         request.onsuccess = () => resolve();
+                         request.onerror = () => reject(request.error);
+                    });
+               }
+
+               /**
+                * Removes an item from IndexedDB. Mimics storage.removeItem.
+                * @param {string} key - The key of the item to remove.
+                * @returns {Promise<void>}
+                */
+               async removeItem(key) {
+                    const store = await this.#getStore('readwrite');
+                    return new Promise((resolve, reject) => {
+                         const request = store.delete(key);
+                         request.onsuccess = () => resolve();
+                         request.onerror = () => reject(request.error);
+                    });
+               }
+          }
+
+
           class Dannote {
                constructor() {
-                    this.notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
                     this.currentNotebook = null;
                     this.currentSection = null;
                     this.currentSubsection = null;
                     this.currentEditingId = null;
                     this.currentMode = 'draw';
-                    this.expandedNotebooks = JSON.parse(localStorage.getItem('expandedNotebooks') || '[]');
-                    this.expandedSections = JSON.parse(localStorage.getItem('expandedSections') || '[]');
                     this.excalidrawAPI = null;
                     this.excalidrawRoot = null;
                     this.isLoading = false;
-
-
-                    this.init();
+                    this.saveTimeout = null; // Add this line
+                    // this.init();
                }
 
-               init() {
+               async init() {
+                    this.storage = new IDBStorage();
+                    this.notebooks = JSON.parse(await this.storage.getItem('notebooks') || '[]');
+                    this.expandedNotebooks = JSON.parse(await this.storage.getItem('expandedNotebooks') || '[]');
+                    this.expandedSections = JSON.parse(await this.storage.getItem('expandedSections') || '[]');
+
                     this.renderNotebooks();
 
                     // Setup event listeneres here
@@ -753,7 +830,7 @@
                     if (sidebar) {
                          sidebar.classList.toggle('collapsed');
                          this.isSidebarCollapsed = sidebar.classList.contains('collapsed');
-                         localStorage.setItem('sidebarCollapsed', JSON.stringify(this.isSidebarCollapsed));
+                         this.storage.setItem('sidebarCollapsed', JSON.stringify(this.isSidebarCollapsed));
                     }
                }
 
@@ -795,13 +872,13 @@
                     return Date.now().toString(36) + Math.random().toString(36).substr(2);
                }
 
-               saveToStorage() {
-                    localStorage.setItem('notebooks', JSON.stringify(this.notebooks));
-                    localStorage.setItem('expandedNotebooks', JSON.stringify(this.expandedNotebooks));
-                    localStorage.setItem('expandedSections', JSON.stringify(this.expandedSections));
+               async saveToStorage() {
+                    await this.storage.setItem('notebooks', JSON.stringify(this.notebooks));
+                    await this.storage.setItem('expandedNotebooks', JSON.stringify(this.expandedNotebooks));
+                    await this.storage.setItem('expandedSections', JSON.stringify(this.expandedSections));
                }
 
-               createNotebook(name) {
+               async createNotebook(name) {
                     const notebook = {
                          id: this.generateId(),
                          name: name,
@@ -809,12 +886,12 @@
                          createdAt: new Date().toISOString()
                     };
                     this.notebooks.push(notebook);
-                    this.saveToStorage();
+                    await this.saveToStorage();
                     this.renderNotebooks();
                     return notebook;
                }
 
-               createSection(notebookId, name) {
+               async createSection(notebookId, name) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (notebook) {
                          const section = {
@@ -825,13 +902,13 @@
                               createdAt: new Date().toISOString()
                          };
                          notebook.sections.push(section);
-                         this.saveToStorage();
+                         await this.saveToStorage();
                          this.renderNotebooks();
                          return section;
                     }
                }
 
-               createSubsection(notebookId, sectionId, name) {
+               async createSubsection(notebookId, sectionId, name) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (notebook) {
                          const section = notebook.sections.find(s => s.id === sectionId);
@@ -843,28 +920,28 @@
                                    createdAt: new Date().toISOString()
                               };
                               section.subsections.push(subsection);
-                              this.saveToStorage();
+                              await this.saveToStorage();
                               this.renderNotebooks();
                               return subsection;
                          }
                     }
                }
 
-               deleteNotebook(id) {
+               async deleteNotebook(id) {
                     if (confirm('Are you sure you want to delete this notebook? This action cannot be undone.')) {
                          this.notebooks = this.notebooks.filter(n => n.id !== id);
-                         this.saveToStorage();
+                         await this.saveToStorage();
                          this.renderNotebooks();
                          this.showEmptyState();
                     }
                }
 
-               deleteSection(notebookId, sectionId) {
+               async deleteSection(notebookId, sectionId) {
                     if (confirm('Are you sure you want to delete this section?')) {
                          const notebook = this.notebooks.find(n => n.id === notebookId);
                          if (notebook) {
                               notebook.sections = notebook.sections.filter(s => s.id !== sectionId);
-                              this.saveToStorage();
+                              await this.saveToStorage();
                               this.renderNotebooks();
                               if (this.currentSection === sectionId) {
                                    this.showEmptyState();
@@ -873,14 +950,14 @@
                     }
                }
 
-               deleteSubsection(notebookId, sectionId, subsectionId) {
+               async deleteSubsection(notebookId, sectionId, subsectionId) {
                     if (confirm('Are you sure you want to delete this subsection?')) {
                          const notebook = this.notebooks.find(n => n.id === notebookId);
                          if (notebook) {
                               const section = notebook.sections.find(s => s.id === sectionId);
                               if (section) {
                                    section.subsections = section.subsections.filter(sub => sub.id !== subsectionId);
-                                   this.saveToStorage();
+                                   await this.saveToStorage();
                                    this.renderNotebooks();
                                    if (this.currentSubsection === subsectionId) {
                                         this.showEmptyState();
@@ -934,6 +1011,7 @@
                                 <button class="action-btn" onclick="app.showCreateSectionModal('${notebook.id}')" title="Add Section">+</button>
                                 <button class="action-btn" onclick="app.showExportOptions('${notebook.id}')" title="Export">📤</button>
                                 <button class="action-btn" onclick="app.deleteNotebook('${notebook.id}')" title="Delete">×</button>
+                                <button class="action-btn" onclick="app.showRenameInput('notebook', '${notebook.id}')" title="Rename">✏️</button>
                             </div>
                         </div>
                     `;
@@ -955,6 +1033,7 @@
                                         <button class="action-btn" onclick="event.stopPropagation(); app.showCreateSubsectionModal('${notebook.id}', '${section.id}')" title="Add Subsection">+</button>
                                         <button class="action-btn" onclick="event.stopPropagation(); app.deleteSection('${notebook.id}', '${section.id}')" title="Delete">×</button>
                                         <button class="action-btn" onclick="event.stopPropagation(); app.showMoveUI('section', '${notebook.id}', '${section.id}')" title="Move">➔</button>
+                                        <button class="action-btn" onclick="event.stopPropagation(); app.showRenameInput('section', '${notebook.id}', '${section.id}')" title="Rename">✏️</button>
                                     </div>
                                 </div>
                             `;
@@ -971,6 +1050,7 @@
                                         <div class="notebook-actions">
                                             <button class="action-btn" onclick="event.stopPropagation(); app.deleteSubsection('${notebook.id}', '${section.id}', '${subsection.id}')" title="Delete">×</button>
                                             <button class="action-btn" onclick="event.stopPropagation(); app.showMoveUI('subsection', '${notebook.id}', '${section.id}', '${subsection.id}')" title="Move">➔</button>
+                                            <button class="action-btn" onclick="event.stopPropagation(); app.showRenameInput('subsection', '${notebook.id}', '${section.id}', '${subsection.id}')" title="Rename">✏️</button>
                                         </div>
                                     `;
                                              subsectionList.appendChild(subsectionElement);
@@ -1213,7 +1293,7 @@
                }
 
                // ADD THIS FUNCTION: Handles the actual data manipulation for the move
-               moveItem(type, sourceNotebookId, targetNotebookId, sectionId, subsectionId) {
+               async moveItem(type, sourceNotebookId, targetNotebookId, sectionId, subsectionId) {
                     const sourceNotebook = this.notebooks.find(n => n.id === sourceNotebookId);
                     const targetNotebook = this.notebooks.find(n => n.id === targetNotebookId);
 
@@ -1259,14 +1339,53 @@
                               // Also update header to avoid showing old info
                               document.getElementById('contentHeader').style.display = 'none';
                          }
-                         this.saveToStorage();
+                         await this.saveToStorage();
                          this.renderNotebooks();
                          alert(`Successfully moved '${itemToMove.name}' to '${targetNotebook.name}'.`);
                     }
                }
 
+               async showRenameInput(type, notebookId, sectionId, subsectionId) {
+                    let item;
+                    let notebook = this.notebooks.find(n => n.id === notebookId);
+                    if (!notebook) return;
+
+                    if (type === 'notebook') {
+                         item = notebook;
+                    } else if (type === 'section') {
+                         item = notebook.sections.find(s => s.id === sectionId);
+                    } else {
+                         item = notebook.sections.find(s => s.id === sectionId)?.subsections.find(sub => sub.id === subsectionId);
+                    }
+
+                    if (!item) {
+                         console.error("Could not find the item to rename.");
+                         return;
+                    }
+
+                    const newName = prompt(`Enter the new name for "${item.name}":`, item.name);
+
+                    // Check if the user clicked "Cancel" or entered an empty name
+                    if (newName === null || newName.trim() === '') {
+                         return; // Do nothing
+                    }
+
+                    // Update the name, save, and re-render the list
+                    item.name = newName.trim();
+                    await this.saveToStorage();
+                    this.renderNotebooks();
+
+                    // If the currently viewed item was renamed, update the header
+                    if (this.currentNotebook === notebookId && (this.currentSection === sectionId || this.currentSubsection === subsectionId)) {
+                         const currentNotebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                         const currentSection = currentNotebook?.sections.find(s => s.id === this.currentSection);
+                         const currentSubsection = currentSection?.subsections.find(sub => sub.id === this.currentSubsection);
+                         this.updateHeader(currentNotebook.name, currentSection?.name, currentSubsection?.name);
+                    }
+               }
+
                // Also update the saveDrawingData method to ensure proper data structure:
-               saveDrawingData(elements, appState) {
+               async saveDrawingData(elements, appState) {
                     if (!this.currentEditingId || !this.excalidrawAPI) return;
 
                     const files = this.excalidrawAPI.getFiles();
@@ -1308,7 +1427,7 @@
                     }
 
 
-                    this.saveToStorage();
+                    await this.saveToStorage();
                }
 
 
@@ -1327,7 +1446,7 @@
                     this.currentEditingId = null;
                }
 
-               saveCurrentContent() {
+               async saveCurrentContent() {
                     if (!this.currentEditingId) return;
 
 
@@ -1340,7 +1459,7 @@
                          const section = notebook.sections.find(s => s.id === this.currentSection);
                     }
 
-                    this.saveToStorage();
+                    await this.saveToStorage();
                }
 
                // ADD THIS FUNCTION: Asks user for export format
@@ -1532,24 +1651,24 @@
           let app;
 
           window.showCreateNotebookModal = () => app.showCreateNotebookModal();
-          window.createNotebook = () => {
+          window.createNotebook = async () => {
                const name = document.getElementById('notebookName').value.trim();
                if (name) {
-                    app.createNotebook(name);
+                    await app.createNotebook(name);
                     app.closeModal('createNotebookModal');
                }
           };
-          window.createSection = () => {
+          window.createSection = async () => {
                const name = document.getElementById('sectionName').value.trim();
                if (name && app.tempNotebookId) {
-                    app.createSection(app.tempNotebookId, name);
+                    await app.createSection(app.tempNotebookId, name);
                     app.closeModal('createSectionModal');
                }
           };
-          window.createSubsection = () => {
+          window.createSubsection = async () => {
                const name = document.getElementById('subsectionName').value.trim();
                if (name && app.tempNotebookId && app.tempSectionId) {
-                    app.createSubsection(app.tempNotebookId, app.tempSectionId, name);
+                    await app.createSubsection(app.tempNotebookId, app.tempSectionId, name);
                     app.closeModal('createSubsectionModal');
                }
           };
@@ -1575,8 +1694,9 @@
           });
 
           // Initialize app
-          document.addEventListener('DOMContentLoaded', () => {
+          document.addEventListener('DOMContentLoaded', async () => {
                app = new Dannote();
+               await app.init();
                window.app = app; // Make globally accessible
           });
 

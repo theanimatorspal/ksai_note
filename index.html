@@ -1,625 +1,1260 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Tracker</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --bg-primary: #0a0a0b;
-            --bg-secondary: #1a1a1b;
-            --bg-tertiary: #262627;
-            --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --accent: #4f46e5;
-            --accent-hover: #6366f1;
-            --good: #10b981;
-            --neutral: #6b7280;
-            --bad: #ef4444;
-            --border: #333334;
-            --shadow: rgba(0,0,0,0.5);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: var(--bg-primary);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-        
-        .loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 0.25rem solid var(--border);
-            border-top: 0.25rem solid var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loader-text {
-            margin-top: 1rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        
-        .container {
-            max-width: 90rem;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .title {
-            font-size: 3rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-            font-weight: 400;
-        }
-        
-        .day-row {
-            background: var(--bg-secondary);
-            border: 0.125rem solid var(--border);
-            border-radius: 1rem;
-            margin-bottom: 2rem;
-            overflow: hidden;
-            box-shadow: 0 0.5rem 1rem var(--shadow);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .day-row:hover {
-            transform: translateY(-0.125rem);
-            box-shadow: 0 0.75rem 1.5rem var(--shadow);
-        }
-        
-        .day-header {
-            padding: 1.5rem 2rem;
-            background: var(--bg-tertiary);
-            border-bottom: 0.125rem solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .date {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .export-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s ease, transform 0.1s ease;
-        }
-        
-        .export-btn:hover {
-            background: var(--accent-hover);
-            transform: scale(1.05);
-        }
-        
-        .day-content {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-            padding: 2rem;
-        }
-        
-        .tasks-section {
-            background: var(--bg-tertiary);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-        }
-        
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-        }
-        
-        .task {
-            background: var(--bg-primary);
-            border: 0.125rem solid var(--border);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transition: border-color 0.2s ease;
-        }
-        
-        .task.good { border-color: var(--good); }
-        .task.neutral { border-color: var(--neutral); }
-        .task.bad { border-color: var(--bad); }
-        
-        .timer {
-            background: var(--bg-secondary);
-            border: 0.125rem solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-            font-family: 'Courier New', monospace;
-            font-size: 1.125rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 6rem;
-            text-align: center;
-        }
-        
-        .timer:hover { transform: scale(1.05); }
-        .timer.running { animation: pulse 2s infinite; }
-        .timer.good { color: var(--good); border-color: var(--good); }
-        .timer.neutral { color: var(--neutral); border-color: var(--neutral); }
-        .timer.bad { color: var(--bad); border-color: var(--bad); }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .habit-type {
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        
-        .habit-type:hover { transform: scale(1.1); }
-        .habit-type.good { background: var(--good); box-shadow: 0 0 1rem rgba(16, 185, 129, 0.3); }
-        .habit-type.neutral { background: var(--neutral); }
-        .habit-type.bad { background: var(--bad); box-shadow: 0 0 1rem rgba(239, 68, 68, 0.3); }
-        
-        .task-name {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            font-size: 1rem;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            transition: background 0.2s ease;
-        }
-        
-        .task-name:focus {
-            background: var(--bg-secondary);
-            outline: none;
-        }
-        
-        .delete-btn {
-            background: var(--bad);
-            color: white;
-            border: none;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-        }
-        
-        .delete-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 0.5rem rgba(239, 68, 68, 0.3);
-        }
-        
-        .add-task-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            width: 100%;
-        }
-        
-        .add-task-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-0.125rem);
-        }
-        
-        .thoughts-section {
-            background: var(--bg-tertiary);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-        }
-        
-        .thought {
-            background: var(--bg-primary);
-            border: 0.125rem solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .thought-task {
-            font-size: 0.875rem;
-            color: var(--accent);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-        
-        .thought-content {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            resize: vertical;
-            min-height: 4rem;
-            font-family: inherit;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-        
-        .thought-content:focus { outline: none; }
-        
-        .disabled {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        
-        @media (max-width: 768px) {
-            .day-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .task {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.5rem;
-            }
-            
-            .timer {
-                align-self: center;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="loader" id="loader">
-        <div class="spinner"></div>
-        <div class="loader-text">Loading your habits...</div>
-    </div>
-    
-    <div class="container" id="app" style="display: none;">
-        <div class="header">
-            <h1 class="title">Habit Tracker</h1>
-            <p class="subtitle">Build better habits, one day at a time</p>
-        </div>
-        
-        <div id="days-container"></div>
-    </div>
 
-    <script>
-        class HabitTracker {
-            constructor() {
-                this.data = [];
-                this.timers = new Map();
-                this.sounds = {
-                    good: new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSWA0fPTgjMGHm688dqATwkKqveTrHMiCSdz0/HUhDQGGoHN8+SGOAcUY7zu4I5TCAfY8/Le2J8iBCuM0PPdhhwGG27B9O2XTggJarbtx6hfGwUvqOp5kOhKGAZJqOPQ8+hgGwUzlNHQ3e5jHQQrtOqxrGseCxtn1PLJcSYEJH3K8OKPOwoOXLHswJFUDA9HotLt1plSEEuV0O7TszhUIkSQxejBVSdCJU+TvOZ1JiCTwNrkXJGYUKUu'),
-                    bad: new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSWA0fPTgjMGHm688dqATwkKqveTrHMiCSdz0/HUhDQGGoHN8+SGOAcUY7zu4I5TCAfY8/Le2J8iBCuM0PPdhhwGG27B9O2XTggJarbtx6hfGwUvqOp5kOhKGAZJqOPQ8+hgGwUzlNHQ3e5jHQQrtOqxrGseCxtn1PLJcSYEJH3K8OKPOwoOXLHswJFUDA9HotLt1plSEEuV0O7TszhUIkSQxejBVSdCJU+TvOZ1JiCTwNrkXJGYUKUu')
-                };
-                this.init();
-            }
-            
-            async init() {
-                try {
-                    await this.loadData();
-                    this.render();
-                    this.startAutoSave();
-                    setTimeout(() => {
-                        document.getElementById('loader').classList.add('hidden');
-                        document.getElementById('app').style.display = 'block';
-                    }, 1500);
-                } catch (error) {
-                    console.error('Failed to initialize:', error);
-                }
-            }
-            
-            async loadData() {
-                const response = await fetch('/api/data');
-                this.data = await response.json();
-            }
-            
-            async saveData(dayData) {
-                await fetch('/api/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dayData)
-                });
-            }
-            
-            render() {
-                const container = document.getElementById('days-container');
-                container.innerHTML = '';
-                
-                this.data.forEach(day => {
-                    const dayEl = this.createDayElement(day);
-                    container.appendChild(dayEl);
-                });
-            }
-            
-            createDayElement(day) {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'day-row';
-                
-                dayEl.innerHTML = `
-                    <div class="day-header">
-                        <div class="date">${new Date(day.dt).toLocaleDateString()}</div>
-                        <button class="export-btn" onclick="app.exportDay('${day.dt}')">Export MD</button>
-                    </div>
-                    <div class="day-content ${day.ed ? '' : 'disabled'}">
-                        <div class="tasks-section">
-                            <h3 class="section-title">Tasks</h3>
-                            <div class="tasks" data-day="${day.dt}">
-                                ${day.tsks.map(task => this.createTaskHTML(task, day.dt)).join('')}
-                            </div>
-                            ${day.ed ? '<button class="add-task-btn" onclick="app.addTask(\''+day.dt+'\')">+ Add Task</button>' : ''}
-                        </div>
-                        <div class="thoughts-section">
-                            <h3 class="section-title">Thoughts</h3>
-                            <div class="thoughts" data-day="${day.dt}">
-                                ${day.ths.map(th => this.createThoughtHTML(th, day.dt)).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                if (day.ed) {
-                    day.tsks.forEach(task => {
-                        if (task.st) {
-                            this.startTimer(task.id, task.st);
-                        }
-                    });
-                }
-                
-                return dayEl;
-            }
-            
-            createTaskHTML(task, dayDate) {
-                const hrs = Math.floor(task.tm / 3600);
-                const mins = Math.floor((task.tm % 3600) / 60);
-                const secs = task.tm % 60;
-                const timeStr = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-                
-                return `
-                    <div class="task ${task.tp}" data-task-id="${task.id}">
-                        <div class="timer ${task.tp} ${task.st ? 'running' : ''}" onclick="app.toggleTimer('${task.id}')" oncontextmenu="app.resetTimer(event, '${task.id}')">${timeStr}</div>
-                        <div class="habit-type ${task.tp}" onclick="app.toggleHabitType('${task.id}')"></div>
-                        <input type="text" class="task-name" value="${task.nm}" onchange="app.updateTaskName('${task.id}', this.value)" placeholder="Habit name">
-                        <button class="delete-btn" onclick="app.deleteTask('${task.id}')">×</button>
-                    </div>
-                `;
-            }
-            
-            createThoughtHTML(thought, dayDate) {
-                return `
-                    <div class="thought">
-                        <div class="thought-task">Task: ${thought.tk_id}</div>
-                        <textarea class="thought-content" onchange="app.updateThought('${thought.tk_id}', this.value)" placeholder="Write your thoughts...">${thought.ct}</textarea>
-                    </div>
-                `;
-            }
-            
-            addTask(dayDate) {
-                const day = this.data.find(d => d.dt === dayDate);
-                const taskId = Date.now().toString();
-                
-                const newTask = {
-                    id: taskId,
-                    nm: '',
-                    tp: 'neutral',
-                    tm: 0,
-                    st: null
-                };
-                
-                day.tsks.push(newTask);
-                
-                const newThought = {
-                    tk_id: taskId,
-                    ct: ''
-                };
-                day.ths.push(newThought);
-                
-                this.render();
-                this.saveData(day);
-            }
-            
-            deleteTask(taskId) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                day.tsks = day.tsks.filter(t => t.id !== taskId);
-                day.ths = day.ths.filter(th => th.tk_id !== taskId);
-                
-                if (this.timers.has(taskId)) {
-                    clearInterval(this.timers.get(taskId));
-                    this.timers.delete(taskId);
-                }
-                
-                this.render();
-                this.saveData(day);
-            }
-            
-            toggleTimer(taskId) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                const task = day.tsks.find(t => t.id === taskId);
-                
-                if (task.st) {
-                    this.stopTimer(taskId);
-                } else {
-                    this.startTimer(taskId);
-                }
-            }
-            
-            startTimer(taskId, startTime = Date.now()) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                const task = day.tsks.find(t => t.id === taskId);
-                
-                task.st = startTime;
-                
-                const timer = setInterval(() => {
-                    const elapsed = Math.floor((Date.now() - task.st) / 1000);
-                    task.tm = elapsed;
-                    
-                    this.updateTimerDisplay(taskId, elapsed);
-                    this.checkSoundTrigger(task, elapsed);
-                }, 1000);
-                
-                this.timers.set(taskId, timer);
-                this.render();
-            }
-            
-            stopTimer(taskId) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                const task = day.tsks.find(t => t.id === taskId);
-                
-                if (this.timers.has(taskId)) {
-                    clearInterval(this.timers.get(taskId));
-                    this.timers.delete(taskId);
-                }
-                
-                task.st = null;
-                this.render();
-                this.saveData(day);
-            }
-            
-            resetTimer(event, taskId) {
-                event.preventDefault();
-                if (event.ctrlKey && event.shiftKey && event.altKey) {
-                    this.deleteTask(taskId);
-                }
-            }
-            
-            updateTimerDisplay(taskId, elapsed) {
-                const hrs = Math.floor(elapsed / 3600);
-                const mins = Math.floor((elapsed % 3600) / 60);
-                const secs = elapsed % 60;
-                const timeStr = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-                
-                const timerEl = document.querySelector(`[data-task-id="${taskId}"] .timer`);
-                if (timerEl) {
-                    timerEl.textContent = timeStr;
-                }
-            }
-            
-            checkSoundTrigger(task, elapsed) {
-                if (task.tp === 'good' && elapsed > 0 && elapsed % 300 === 0) {
-                    this.sounds.good.play().catch(() => {});
-                } else if (task.tp === 'bad' && elapsed > 0 && elapsed % 150 === 0) {
-                    this.sounds.bad.play().catch(() => {});
-                }
-            }
-            
-            toggleHabitType(taskId) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                const task = day.tsks.find(t => t.id === taskId);
-                
-                const types = ['good', 'neutral', 'bad'];
-                const currentIndex = types.indexOf(task.tp);
-                task.tp = types[(currentIndex + 1) % types.length];
-                
-                this.render();
-                this.saveData(day);
-            }
-            
-            updateTaskName(taskId, name) {
-                const day = this.data.find(d => d.tsks.some(t => t.id === taskId));
-                const task = day.tsks.find(t => t.id === taskId);
-                
-                task.nm = name;
-                this.saveData(day);
-            }
-            
-            updateThought(taskId, content) {
-                const day = this.data.find(d => d.ths.some(th => th.tk_id === taskId));
-                const thought = day.ths.find(th => th.tk_id === taskId);
-                
-                thought.ct = content;
-                this.saveData(day);
-            }
-            
-            async exportDay(dayDate) {
-                const response = await fetch(`/api/export/${dayDate}`);
-                const data = await response.json();
-                
-                const blob = new Blob([data.md], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `habits-${dayDate}.md`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            startAutoSave() {
-                setInterval(async () => {
-                    for (const day of this.data) {
-                        if (day.ed) {
-                            await this.saveData(day);
-                        }
-                    }
-                }, 10000);
-            }
-        }
-        
-        const app = new HabitTracker();
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title> Dannote </title>
+     <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css" />
+     <script>
+          window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
+     </script>
+     <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.0.0",
+        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+        "react-dom": "https://esm.sh/react-dom@19.0.0"
+      }
+    }
     </script>
+     <style>
+          * {
+               margin: 0;
+               padding: 0;
+               box-sizing: border-box;
+          }
+
+          body {
+               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+               background-color: #f5f5f5;
+               height: 100vh;
+               overflow: hidden;
+          }
+
+          .app-container {
+               display: flex;
+               height: 100vh;
+          }
+
+          .sidebar {
+               width: 300px;
+               background-color: #2d2d30;
+               color: white;
+               overflow-y: auto;
+               border-right: 1px solid #404040;
+          }
+
+          .sidebar-header {
+               padding: 20px;
+               background-color: #252526;
+               border-bottom: 1px solid #404040;
+          }
+
+          .sidebar-header h1 {
+               font-size: 20px;
+               margin-bottom: 15px;
+          }
+
+          .add-notebook-btn {
+               background-color: #0078d4;
+               color: white;
+               border: none;
+               padding: 8px 16px;
+               border-radius: 4px;
+               cursor: pointer;
+               font-size: 14px;
+          }
+
+          .add-notebook-btn:hover {
+               background-color: #106ebe;
+          }
+
+          .notebook-list {
+               padding: 10px 0;
+          }
+
+          .notebook-item {
+               padding: 10px 20px;
+               cursor: pointer;
+               border-bottom: 1px solid #404040;
+               position: relative;
+          }
+
+          .notebook-item:hover {
+               background-color: #37373d;
+          }
+
+          .notebook-item.active {
+               background-color: #094771;
+          }
+
+          .notebook-title {
+               font-weight: 600;
+               margin-bottom: 5px;
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+          }
+
+          .notebook-actions {
+               display: none;
+          }
+
+          .notebook-item:hover .notebook-actions {
+               display: flex;
+               gap: 5px;
+          }
+
+          .action-btn {
+               background: none;
+               border: none;
+               color: #ccc;
+               cursor: pointer;
+               padding: 2px 5px;
+               border-radius: 3px;
+               font-size: 12px;
+          }
+
+          .action-btn:hover {
+               background-color: #555;
+          }
+
+          .section-list {
+               margin-left: 15px;
+               margin-top: 10px;
+          }
+
+          .section-item {
+               padding: 5px 10px;
+               cursor: pointer;
+               border-radius: 3px;
+               margin-bottom: 2px;
+               font-size: 14px;
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+          }
+
+          .section-item:hover {
+               background-color: #37373d;
+          }
+
+          .section-item.active {
+               background-color: #0078d4;
+          }
+
+          .subsection-list {
+               margin-left: 15px;
+               margin-top: 5px;
+          }
+
+          .subsection-item {
+               padding: 3px 8px;
+               cursor: pointer;
+               border-radius: 3px;
+               margin-bottom: 1px;
+               font-size: 13px;
+               color: #ccc;
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+          }
+
+          .subsection-item:hover {
+               background-color: #37373d;
+          }
+
+          .subsection-item.active {
+               background-color: #0078d4;
+               color: white;
+          }
+
+          .main-content {
+               flex: 1;
+               display: flex;
+               flex-direction: column;
+               background-color: white;
+               position: relative;
+          }
+
+          /* Add these styles */
+          .sidebar.collapsed {
+               width: 0;
+               padding: 0;
+               border-right: none;
+               overflow: hidden;
+          }
+
+          .hamburger-btn {
+               position: absolute;
+               top: 20px;
+               left: 20px;
+               z-index: 1001;
+               display: flex;
+               flex-direction: column;
+               justify-content: space-around;
+               width: 30px;
+               height: 25px;
+               background: transparent;
+               border: none;
+               cursor: pointer;
+               padding: 0;
+          }
+
+          .hamburger-btn span {
+               width: 100%;
+               height: 3px;
+               background-color: #888;
+               border-radius: 3px;
+               transition: all 0.3s ease-in-out;
+          }
+
+          .content-header {
+               padding: 20px;
+               padding-left: 60px;
+               background-color: #f8f9fa;
+               border-bottom: 1px solid #e5e5e5;
+
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+               background-color: #252526;
+               /* Dark background */
+               border-bottom: 1px solid #404040;
+               /* Dark border */
+          }
+
+          .breadcrumb {
+               font-size: 14px;
+               color: #cccccc;
+               /* Light gray text */
+               margin-bottom: 10px;
+          }
+
+          .page-title {
+               font-size: 24px;
+               font-weight: 600;
+               color: #333;
+               color: #ffffff;
+               /* White text */
+          }
+
+          .header-right {
+               display: flex;
+               align-items: center;
+               gap: 10px;
+          }
+
+          /* Add these styles to your main <style> block in the <head> */
+          /* ADD THIS NEW RULE */
+          .stroke-controls {
+               display: flex;
+               flex-direction: column;
+               gap: 8px;
+          }
+
+          .control-group {
+               display: flex;
+               align-items: center;
+               gap: 10px;
+               padding: 8px 0;
+          }
+
+          .control-group label {
+               font-size: 14px;
+               font-weight: 600;
+               color: #333;
+          }
+
+          #strokeWidthValue {
+               font-family: 'Courier New', Courier, monospace;
+               font-weight: bold;
+               min-width: 30px;
+               text-align: left;
+               color: #333;
+          }
+
+          /* Add these styles to your main <style> block */
+
+          .color-palette {
+               display: flex;
+               align-items: center;
+               gap: 6px;
+          }
+
+          .color-swatch {
+               width: 22px;
+               height: 22px;
+               border-radius: 50%;
+               cursor: pointer;
+               border: 2px solid transparent;
+               transition: transform 0.2s ease;
+          }
+
+          .color-swatch:hover {
+               transform: scale(1.15);
+          }
+
+          .color-swatch.active {
+               border-color: #0078d4;
+               /* Highlights the selected color */
+               transform: scale(1.15);
+          }
+
+          .control-group label,
+          .font-control label {
+               color: #cccccc;
+          }
+
+          #strokeWidthValue {
+               color: #ffffff;
+          }
+
+          #fontFamilySelect {
+               /* This removes the default browser look (the white box) */
+               -webkit-appearance: none;
+               -moz-appearance: none;
+               appearance: none;
+
+               /* Your custom dark-mode styles */
+               color: #f0f0f0;
+               background-color: #3e3e42 !important;
+               border: 1px solid #555;
+               border-radius: 5px;
+               cursor: pointer;
+               font-size: 14px;
+
+               /* Padding to give the text some space */
+               padding: 5px 10px;
+          }
+
+          /* select {
+               width: 100%;
+               padding: 0.75rem;
+               background-color: #333;
+               border: 1px;
+               color: #fff;
+               border-radius: 4px;
+               box-sizing: border-box;
+               font-size: 1rem;
+          } */
+
+
+          .font-control {
+               display: flex;
+               align-items: center;
+               gap: 8px;
+          }
+
+          .font-control label {
+               font-size: 1.2rem;
+               /* Make the emoji icon a bit bigger */
+          }
+
+          #fontFamilySelect {
+               font-family: 'Segoe UI', sans-serif;
+               font-size: 14px;
+               padding: 5px 8px;
+               border-radius: 4px;
+               border: 1px solid #ccc;
+               background-color: #fff;
+               cursor: pointer;
+          }
+
+          .mode-btn {
+               padding: 8px 16px;
+               border: 1px solid #ddd;
+               background-color: white;
+               cursor: pointer;
+               border-radius: 4px;
+               font-size: 14px;
+          }
+
+          .mode-btn.active {
+               background-color: #0078d4;
+               color: white;
+               border-color: #0078d4;
+          }
+
+          .mode-btn:hover:not(.active) {
+               background-color: #f5f5f5;
+          }
+
+          .editor-container {
+               flex: 1;
+               display: flex;
+               flex-direction: column;
+               overflow: hidden;
+          }
+
+          .text-editor {
+               width: 100%;
+               height: 100%;
+               border: none;
+               outline: none;
+               font-size: 16px;
+               line-height: 1.6;
+               resize: none;
+               font-family: inherit;
+               padding: 20px;
+          }
+
+          .excalidraw-container {
+               flex: 1;
+               height: 100%;
+               min-height: 500px;
+          }
+
+          .empty-state {
+               text-align: center;
+               color: #666;
+               margin-top: 100px;
+               padding: 20px;
+          }
+
+          .empty-state h2 {
+               margin-bottom: 10px;
+          }
+
+          .modal {
+               position: fixed;
+               top: 0;
+               left: 0;
+               width: 100%;
+               height: 100%;
+               background-color: rgba(0, 0, 0, 0.5);
+               display: none;
+               justify-content: center;
+               align-items: center;
+               z-index: 1000;
+          }
+
+          .modal-content {
+               background-color: white;
+               padding: 30px;
+               border-radius: 8px;
+               width: 400px;
+               max-width: 90%;
+          }
+
+          .modal-header {
+               margin-bottom: 20px;
+          }
+
+          .modal-header h3 {
+               font-size: 18px;
+               margin-bottom: 10px;
+          }
+
+          .form-group {
+               margin-bottom: 15px;
+          }
+
+          .form-group label {
+               display: block;
+               margin-bottom: 5px;
+               font-weight: 600;
+          }
+
+          .form-group input {
+               width: 100%;
+               padding: 10px;
+               border: 1px solid #ddd;
+               border-radius: 4px;
+               font-size: 14px;
+          }
+
+          .modal-actions {
+               display: flex;
+               justify-content: flex-end;
+               gap: 10px;
+               margin-top: 20px;
+          }
+
+          .btn {
+               padding: 10px 20px;
+               border: none;
+               border-radius: 4px;
+               cursor: pointer;
+               font-size: 14px;
+          }
+
+          .btn-primary {
+               background-color: #0078d4;
+               color: white;
+          }
+
+          .btn-primary:hover {
+               background-color: #106ebe;
+          }
+
+          .btn-secondary {
+               background-color: #f5f5f5;
+               color: #333;
+               border: 1px solid #ddd;
+          }
+
+          .btn-secondary:hover {
+               background-color: #e9ecef;
+          }
+
+          .expand-icon {
+               cursor: pointer;
+               margin-right: 5px;
+               user-select: none;
+          }
+
+          .hidden {
+               display: none !important;
+          }
+
+          #excalidrawContainer canvas {
+               cursor: default !important;
+          }
+     </style>
+</head>
+
+<body>
+     <div class="app-container">
+          <div class="sidebar">
+               <div class="sidebar-header">
+                    <h1>📓 Dannote </h1>
+                    <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
+               </div>
+               <div class="notebook-list" id="notebookList"></div>
+          </div>
+
+          <div class="main-content">
+               <button class="hamburger-btn" id="hamburgerBtn" onclick="app.toggleSidebar()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+               </button>
+               <div class="content-header" id="contentHeader" style="display: none;">
+                    <div class="header-left">
+                         <div class="breadcrumb" id="breadcrumb"></div>
+                         <div class="page-title" id="pageTitle"></div>
+                    </div>
+                    <div class="header-right">
+                         <div class="stroke-controls">
+                              <div class="control-group">
+                                   <label for="strokeWidthSlider">🎨 Stroke Width:</label>
+                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.01" value="0.3">
+                                   <span id="strokeWidthValue">0.3</span>
+                              </div>
+                              <div class="color-palette" id="colorPalette"></div>
+                         </div>
+                         <div class="font-control">
+                              <select id="fontFamilySelect">
+                                   <option value="1">Hand-drawn</option>
+                                   <option value="2">Normal</option>
+                                   <option value="3">Code</option>
+                                   <option value="4" selected>System Font</option>
+                              </select>
+                              <label for="fontFamilySelect">🔽</label>
+                         </div>
+                    </div>
+               </div>
+
+
+               <div class="editor-container">
+                    <div class="empty-state" id="emptyState">
+                         <h2>Welcome to Dannote</h2>
+                         <p>Create a notebook to get started with text notes and drawings</p>
+                    </div>
+                    <div class="excalidraw-container hidden" id="excalidrawContainer"></div>
+               </div>
+          </div>
+     </div>
+
+     <!-- Modals (same as before) -->
+     <div class="modal" id="createNotebookModal">
+          <div class="modal-content">
+               <div class="modal-header">
+                    <h3>Create New Notebook</h3>
+               </div>
+               <div class="form-group">
+                    <label for="notebookName">Notebook Name</label>
+                    <input type="text" id="notebookName" placeholder="Enter notebook name">
+               </div>
+               <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('createNotebookModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="createNotebook()">Create</button>
+               </div>
+          </div>
+     </div>
+
+     <div class="modal" id="createSectionModal">
+          <div class="modal-content">
+               <div class="modal-header">
+                    <h3>Create New Section</h3>
+               </div>
+               <div class="form-group">
+                    <label for="sectionName">Section Name</label>
+                    <input type="text" id="sectionName" placeholder="Enter section name">
+               </div>
+               <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('createSectionModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="createSection()">Create</button>
+               </div>
+          </div>
+     </div>
+
+     <div class="modal" id="createSubsectionModal">
+          <div class="modal-content">
+               <div class="modal-header">
+                    <h3>Create New Subsection</h3>
+               </div>
+               <div class="form-group">
+                    <label for="subsectionName">Subsection Name</label>
+                    <input type="text" id="subsectionName" placeholder="Enter subsection name">
+               </div>
+               <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('createSubsectionModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="createSubsection()">Create</button>
+               </div>
+          </div>
+     </div>
+
+     <script type="module">
+          import * as ExcalidrawLib from 'https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.js?external=react,react-dom';
+          import React from "react";
+          import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
+
+          class Dannote {
+               constructor() {
+                    this.notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
+                    this.currentNotebook = null;
+                    this.currentSection = null;
+                    this.currentSubsection = null;
+                    this.currentEditingId = null;
+                    this.currentMode = 'draw';
+                    this.expandedNotebooks = JSON.parse(localStorage.getItem('expandedNotebooks') || '[]');
+                    this.expandedSections = JSON.parse(localStorage.getItem('expandedSections') || '[]');
+                    this.excalidrawAPI = null;
+                    this.excalidrawRoot = null;
+
+                    this.init();
+               }
+
+               init() {
+                    this.renderNotebooks();
+
+                    // Setup event listeneres here
+                    const strokeSlider = document.getElementById('strokeWidthSlider');
+                    if (strokeSlider) {
+                         strokeSlider.addEventListener('input', (event) => {
+                              this.setStrokeWidth(event.target.value);
+                         });
+                    }
+                    const fontSelect = document.getElementById('fontFamilySelect');
+                    if (fontSelect) {
+                         fontSelect.addEventListener('change', (event) => {
+                              this.setFontFamily(event.target.value);
+                         });
+                    }
+
+                    this.renderColorPalette()
+                    this.applySidebarState()
+               }
+
+               toggleSidebar() {
+                    const sidebar = document.querySelector('.sidebar');
+                    if (sidebar) {
+                         sidebar.classList.toggle('collapsed');
+                         this.isSidebarCollapsed = sidebar.classList.contains('collapsed');
+                         localStorage.setItem('sidebarCollapsed', JSON.stringify(this.isSidebarCollapsed));
+                    }
+               }
+
+               applySidebarState() {
+                    if (this.isSidebarCollapsed) {
+                         document.querySelector('.sidebar')?.classList.add('collapsed');
+                    }
+               }
+
+               renderColorPalette() {
+                    const colors = [
+                         '#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00',
+                         '#862e9c', '#c92a2a', '#5f3dc4', '#ffffff', '#868e96'
+                    ]; // Black, Red, Green, Blue, Orange, Purple, Crimson, Violet, White, Gray
+                    const paletteContainer = document.getElementById('colorPalette');
+                    if (!paletteContainer) return;
+
+                    paletteContainer.innerHTML = ''; // Clear existing swatches
+                    colors.forEach((color, index) => {
+                         const swatch = document.createElement('div');
+                         swatch.className = 'color-swatch';
+                         if (index === 0) {
+                              swatch.classList.add('active'); // Set black as default active
+                         }
+                         swatch.style.backgroundColor = color;
+                         swatch.dataset.color = color;
+
+                         // For the white swatch, add a visible border
+                         if (color === '#ffffff') {
+                              swatch.style.border = '1px solid #ced4da';
+                         }
+
+                         swatch.addEventListener('click', () => this.setStrokeColor(color));
+                         paletteContainer.appendChild(swatch);
+                    });
+               }
+
+               generateId() {
+                    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+               }
+
+               saveToStorage() {
+                    localStorage.setItem('notebooks', JSON.stringify(this.notebooks));
+                    localStorage.setItem('expandedNotebooks', JSON.stringify(this.expandedNotebooks));
+                    localStorage.setItem('expandedSections', JSON.stringify(this.expandedSections));
+               }
+
+               createNotebook(name) {
+                    const notebook = {
+                         id: this.generateId(),
+                         name: name,
+                         sections: [],
+                         createdAt: new Date().toISOString()
+                    };
+                    this.notebooks.push(notebook);
+                    this.saveToStorage();
+                    this.renderNotebooks();
+                    return notebook;
+               }
+
+               createSection(notebookId, name) {
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    if (notebook) {
+                         const section = {
+                              id: this.generateId(),
+                              name: name,
+                              subsections: [],
+                              textContent: '',
+                              drawingData: null,
+                              createdAt: new Date().toISOString()
+                         };
+                         notebook.sections.push(section);
+                         this.saveToStorage();
+                         this.renderNotebooks();
+                         return section;
+                    }
+               }
+
+               createSubsection(notebookId, sectionId, name) {
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    if (notebook) {
+                         const section = notebook.sections.find(s => s.id === sectionId);
+                         if (section) {
+                              const subsection = {
+                                   id: this.generateId(),
+                                   name: name,
+                                   textContent: '',
+                                   drawingData: null,
+                                   createdAt: new Date().toISOString()
+                              };
+                              section.subsections.push(subsection);
+                              this.saveToStorage();
+                              this.renderNotebooks();
+                              return subsection;
+                         }
+                    }
+               }
+
+               deleteNotebook(id) {
+                    if (confirm('Are you sure you want to delete this notebook? This action cannot be undone.')) {
+                         this.notebooks = this.notebooks.filter(n => n.id !== id);
+                         this.saveToStorage();
+                         this.renderNotebooks();
+                         this.showEmptyState();
+                    }
+               }
+
+               deleteSection(notebookId, sectionId) {
+                    if (confirm('Are you sure you want to delete this section?')) {
+                         const notebook = this.notebooks.find(n => n.id === notebookId);
+                         if (notebook) {
+                              notebook.sections = notebook.sections.filter(s => s.id !== sectionId);
+                              this.saveToStorage();
+                              this.renderNotebooks();
+                              if (this.currentSection === sectionId) {
+                                   this.showEmptyState();
+                              }
+                         }
+                    }
+               }
+
+               deleteSubsection(notebookId, sectionId, subsectionId) {
+                    if (confirm('Are you sure you want to delete this subsection?')) {
+                         const notebook = this.notebooks.find(n => n.id === notebookId);
+                         if (notebook) {
+                              const section = notebook.sections.find(s => s.id === sectionId);
+                              if (section) {
+                                   section.subsections = section.subsections.filter(sub => sub.id !== subsectionId);
+                                   this.saveToStorage();
+                                   this.renderNotebooks();
+                                   if (this.currentSubsection === subsectionId) {
+                                        this.showEmptyState();
+                                   }
+                              }
+                         }
+                    }
+               }
+
+               toggleNotebook(notebookId) {
+                    const index = this.expandedNotebooks.indexOf(notebookId);
+                    if (index > -1) {
+                         this.expandedNotebooks.splice(index, 1);
+                    } else {
+                         this.expandedNotebooks.push(notebookId);
+                    }
+                    this.saveToStorage();
+                    this.renderNotebooks();
+               }
+
+               toggleSection(sectionId) {
+                    const index = this.expandedSections.indexOf(sectionId);
+                    if (index > -1) {
+                         this.expandedSections.splice(index, 1);
+                    } else {
+                         this.expandedSections.push(sectionId);
+                    }
+                    this.saveToStorage();
+                    this.renderNotebooks();
+               }
+
+               renderNotebooks() {
+                    const container = document.getElementById('notebookList');
+                    container.innerHTML = '';
+
+                    this.notebooks.forEach(notebook => {
+                         const isExpanded = this.expandedNotebooks.includes(notebook.id);
+                         const notebookElement = document.createElement('div');
+                         notebookElement.className = 'notebook-item';
+                         if (this.currentNotebook === notebook.id) {
+                              notebookElement.classList.add('active');
+                         }
+
+                         notebookElement.innerHTML = `
+                        <div class="notebook-title">
+                            <span>
+                                <span class="expand-icon" onclick="app.toggleNotebook('${notebook.id}')">${isExpanded ? '▼' : '▶'}</span>
+                                📓 ${notebook.name}
+                            </span>
+                            <div class="notebook-actions">
+                                <button class="action-btn" onclick="app.showCreateSectionModal('${notebook.id}')" title="Add Section">+</button>
+                                <button class="action-btn" onclick="app.deleteNotebook('${notebook.id}')" title="Delete">×</button>
+                            </div>
+                        </div>
+                    `;
+
+                         if (isExpanded) {
+                              const sectionList = document.createElement('div');
+                              sectionList.className = 'section-list';
+
+                              notebook.sections.forEach(section => {
+                                   const isSectionExpanded = this.expandedSections.includes(section.id);
+                                   const sectionElement = document.createElement('div');
+                                   sectionElement.innerHTML = `
+                                <div class="section-item ${this.currentSection === section.id && !this.currentSubsection ? 'active' : ''}" onclick="app.selectSection('${notebook.id}', '${section.id}')">
+                                    <span>
+                                        ${section.subsections.length > 0 ? `<span class="expand-icon" onclick="event.stopPropagation(); app.toggleSection('${section.id}')">${isSectionExpanded ? '▼' : '▶'}</span>` : ''}
+                                        📄 ${section.name}
+                                    </span>
+                                    <div class="notebook-actions">
+                                        <button class="action-btn" onclick="event.stopPropagation(); app.showCreateSubsectionModal('${notebook.id}', '${section.id}')" title="Add Subsection">+</button>
+                                        <button class="action-btn" onclick="event.stopPropagation(); app.deleteSection('${notebook.id}', '${section.id}')" title="Delete">×</button>
+                                    </div>
+                                </div>
+                            `;
+
+                                   if (isSectionExpanded && section.subsections.length > 0) {
+                                        const subsectionList = document.createElement('div');
+                                        subsectionList.className = 'subsection-list';
+
+                                        section.subsections.forEach(subsection => {
+                                             const subsectionElement = document.createElement('div');
+                                             subsectionElement.className = `subsection-item ${this.currentSubsection === subsection.id ? 'active' : ''}`;
+                                             subsectionElement.innerHTML = `
+                                        <span onclick="app.selectSubsection('${notebook.id}', '${section.id}', '${subsection.id}')">📋 ${subsection.name}</span>
+                                        <div class="notebook-actions">
+                                            <button class="action-btn" onclick="event.stopPropagation(); app.deleteSubsection('${notebook.id}', '${section.id}', '${subsection.id}')" title="Delete">×</button>
+                                        </div>
+                                    `;
+                                             subsectionList.appendChild(subsectionElement);
+                                        });
+
+                                        sectionElement.appendChild(subsectionList);
+                                   }
+
+                                   sectionList.appendChild(sectionElement);
+                              });
+
+                              notebookElement.appendChild(sectionList);
+                         }
+
+                         container.appendChild(notebookElement);
+                    });
+               }
+
+               selectSection(notebookId, sectionId) {
+                    this.saveCurrentContent();
+                    this.currentNotebook = notebookId;
+                    this.currentSection = sectionId;
+                    this.currentSubsection = null;
+                    this.currentEditingId = `${notebookId}-${sectionId}`;
+
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    const section = notebook.sections.find(s => s.id === sectionId);
+
+                    this.updateHeader(notebook.name, section.name, '');
+                    this.loadContent(section);
+                    this.renderNotebooks();
+               }
+
+               selectSubsection(notebookId, sectionId, subsectionId) {
+                    this.saveCurrentContent();
+                    this.currentNotebook = notebookId;
+                    this.currentSection = sectionId;
+                    this.currentSubsection = subsectionId;
+                    this.currentEditingId = `${notebookId}-${sectionId}-${subsectionId}`;
+
+                    const notebook = this.notebooks.find(n => n.id === notebookId);
+                    const section = notebook.sections.find(s => s.id === sectionId);
+                    const subsection = section.subsections.find(sub => sub.id === subsectionId);
+
+                    this.updateHeader(notebook.name, section.name, subsection.name);
+                    this.loadContent(subsection);
+                    this.renderNotebooks();
+               }
+
+               updateHeader(notebookName, sectionName, subsectionName) {
+                    const breadcrumb = document.getElementById('breadcrumb');
+                    const pageTitle = document.getElementById('pageTitle');
+                    const contentHeader = document.getElementById('contentHeader');
+
+                    let breadcrumbText = `📓 ${notebookName} > 📄 ${sectionName}`;
+                    let titleText = sectionName;
+
+                    if (subsectionName) {
+                         breadcrumbText += ` > 📋 ${subsectionName}`;
+                         titleText = subsectionName;
+                    }
+
+                    breadcrumb.textContent = breadcrumbText;
+                    pageTitle.textContent = titleText;
+                    contentHeader.style.display = 'flex';
+               }
+
+               loadContent(item) {
+                    const emptyState = document.getElementById('emptyState');
+                    emptyState.style.display = 'none';
+
+                    this.initializeDrawMode();
+
+                    if (item.drawingData) {
+                         this.initializeExcalidraw(item.drawingData);
+                    } else {
+                         this.initializeExcalidraw();
+                    }
+               }
+
+               initializeDrawMode() {
+                    this.currentMode = 'draw';
+                    const excalidrawContainer = document.getElementById('excalidrawContainer');
+                    excalidrawContainer.classList.remove('hidden');
+                    if (!this.excalidrawRoot) {
+                         this.initializeExcalidraw();
+                    }
+               }
+
+               // Replace the initializeExcalidraw method in the Dannote class with this completely fixed version:
+
+               initializeExcalidraw(initialData = null) {
+                    const container = document.getElementById('excalidrawContainer');
+
+                    // Clear previous instance
+                    if (this.excalidrawRoot) {
+                         this.excalidrawRoot.unmount();
+                    }
+
+                    // Store reference to this for use in component
+                    const self = this;
+
+                    // Create new Excalidraw instance - DO NOT pass initialData as prop
+                    const ExcalidrawComponent = () => {
+                         const [excalidrawAPI, setExcalidrawAPI] = React.useState(null);
+
+                         React.useEffect(() => {
+                              if (excalidrawAPI) {
+                                   // Load initial data after API is ready
+                                   if (initialData && initialData.elements) {
+                                        setTimeout(() => {
+                                             try {
+                                                  // Only pass elements and minimal appState
+                                                  const sceneData = {
+                                                       elements: initialData.elements || [],
+                                                       appState: {
+                                                            // Only include serializable properties, exclude collaborators entirely
+                                                            viewBackgroundColor: initialData.appState?.viewBackgroundColor || "#ffffff",
+                                                            currentItemStrokeColor: initialData.appState?.currentItemStrokeColor || "#000000",
+                                                            currentItemBackgroundColor: initialData.appState?.currentItemBackgroundColor || "transparent",
+                                                            currentItemFillStyle: initialData.appState?.currentItemFillStyle || "solid",
+                                                            currentItemStrokeWidth: parseFloat(document.getElementById("strokeWidthSlider")?.value || 0.1),
+                                                            currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
+                                                            currentItemStrokeStyle: initialData.appState?.currentItemStrokeStyle || "solid",
+                                                            currentItemRoughness: initialData.appState?.currentItemRoughness || 1,
+                                                            currentItemOpacity: initialData.appState?.currentItemOpacity || 100,
+                                                            gridSize: initialData.appState?.gridSize || null,
+                                                            colorPalette: initialData.appState?.colorPalette || {},
+                                                            zoom: initialData.appState?.zoom || { value: 1 },
+                                                            scrollX: initialData.appState?.scrollX || 0,
+                                                            scrollY: initialData.appState?.scrollY || 0
+                                                       }
+                                                  };
+
+                                                  excalidrawAPI.updateScene(sceneData);
+                                             } catch (error) {
+                                                  console.warn('Failed to load initial drawing data:', error);
+                                                  // Initialize with completely empty scene if loading fails
+                                                  excalidrawAPI.updateScene({
+                                                       elements: [],
+                                                       appState: {}
+                                                  });
+                                             }
+                                        }, 200); // Increased timeout to ensure full initialization
+                                   }
+                              }
+                         }, [excalidrawAPI]);
+
+                         return React.createElement(ExcalidrawLib.Excalidraw, {
+                              excalidrawAPI: (api) => {
+                                   setExcalidrawAPI(api);
+                                   self.excalidrawAPI = api;
+                              },
+                              onChange: (elements, appState) => {
+                                   // Auto-save drawing data
+                                   self.saveDrawingData(elements, appState);
+                              },
+
+                              initialData: {
+                                   appState: {
+                                        currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.1),
+                                        // ADD THIS LINE
+                                        currentItemStrokeColor: '#000000',
+                                        theme: 'dark',
+                                        currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
+                                        zenModeEnabled: true
+                                   }
+                              }
+                         });
+                    };
+
+                    this.excalidrawRoot = createRoot(container);
+                    this.excalidrawRoot.render(React.createElement(ExcalidrawComponent));
+               }
+
+
+               setStrokeWidth(width) {
+                    const numericWidth = parseFloat(width);
+                    if (this.excalidrawAPI) {
+                         this.excalidrawAPI.updateScene({
+                              appState: { currentItemStrokeWidth: numericWidth }
+                         });
+                    }
+                    // Update the slider's initialData default so it feels consistent
+                    const slider = document.getElementById('strokeWidthSlider');
+                    if (slider) slider.value = numericWidth;
+                    const valueDisplay = document.getElementById('strokeWidthValue');
+                    if (valueDisplay) valueDisplay.textContent = numericWidth.toFixed(1);
+               }
+
+               setStrokeColor(color) {
+                    if (this.excalidrawAPI) {
+                         this.excalidrawAPI.updateScene({
+                              appState: { currentItemStrokeColor: color }
+                         });
+                    }
+                    // Update the 'active' class on the UI
+                    document.querySelectorAll('.color-swatch').forEach(swatch => {
+                         swatch.classList.toggle('active', swatch.dataset.color === color);
+                    });
+               }
+
+
+               setFontFamily(fontValue) {
+                    // The font values for Excalidraw are numbers
+                    const numericFont = parseInt(fontValue, 10);
+                    if (this.excalidrawAPI) {
+                         this.excalidrawAPI.updateScene({
+                              appState: {
+                                   currentItemFontFamily: numericFont
+                              }
+                         });
+                    }
+               }
+
+               // Also update the saveDrawingData method to ensure proper data structure:
+               saveDrawingData(elements, appState) {
+                    if (!this.currentEditingId) return;
+
+                    // Create a clean appState object with only serializable properties
+                    const cleanAppState = {
+                         viewBackgroundColor: appState.viewBackgroundColor,
+                         currentItemStrokeColor: appState.currentItemStrokeColor,
+                         currentItemBackgroundColor: appState.currentItemBackgroundColor,
+                         currentItemFillStyle: appState.currentItemFillStyle,
+                         currentItemFontFamily: appState.currentItemFontFamily,
+                         currentItemStrokeWidth: appState.currentItemStrokeWidth,
+                         currentItemStrokeStyle: appState.currentItemStrokeStyle,
+                         currentItemRoughness: appState.currentItemRoughness,
+                         currentItemOpacity: appState.currentItemOpacity,
+                         gridSize: appState.gridSize,
+                         colorPalette: appState.colorPalette,
+                         zoom: appState.zoom,
+                         scrollX: appState.scrollX,
+                         scrollY: appState.scrollY
+                         // Explicitly exclude collaborators and other non-serializable properties
+                    };
+
+                    const drawingData = {
+                         elements: elements,
+                         appState: cleanAppState
+                    };
+
+                    if (this.currentSubsection) {
+                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                         const section = notebook.sections.find(s => s.id === this.currentSection);
+                         const subsection = section.subsections.find(sub => sub.id === this.currentSubsection);
+                         subsection.drawingData = drawingData;
+                    } else if (this.currentSection) {
+                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                         const section = notebook.sections.find(s => s.id === this.currentSection);
+                         section.drawingData = drawingData;
+                    }
+
+                    this.saveToStorage();
+               }
+
+               showEmptyState() {
+                    const textEditor = document.getElementById('textEditor');
+                    const excalidrawContainer = document.getElementById('excalidrawContainer');
+                    const emptyState = document.getElementById('emptyState');
+                    const contentHeader = document.getElementById('contentHeader');
+
+                    textEditor.classList.add('hidden');
+                    excalidrawContainer.classList.add('hidden');
+                    contentHeader.style.display = 'flex';
+                    emptyState.style.display = 'block';
+
+                    this.currentNotebook = null;
+                    this.currentSection = null;
+                    this.currentSubsection = null;
+                    this.currentEditingId = null;
+               }
+
+               saveCurrentContent() {
+                    if (!this.currentEditingId) return;
+
+
+                    if (this.currentSubsection) {
+                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                         const section = notebook.sections.find(s => s.id === this.currentSection);
+                         const subsection = section.subsections.find(sub => sub.id === this.currentSubsection);
+                    } else if (this.currentSection) {
+                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                         const section = notebook.sections.find(s => s.id === this.currentSection);
+                    }
+
+                    this.saveToStorage();
+               }
+
+               showCreateNotebookModal() {
+                    document.getElementById('createNotebookModal').style.display = 'flex';
+                    document.getElementById('notebookName').focus();
+               }
+
+               showCreateSectionModal(notebookId) {
+                    this.tempNotebookId = notebookId;
+                    document.getElementById('createSectionModal').style.display = 'flex';
+                    document.getElementById('sectionName').focus();
+               }
+
+               showCreateSubsectionModal(notebookId, sectionId) {
+                    this.tempNotebookId = notebookId;
+                    this.tempSectionId = sectionId;
+                    document.getElementById('createSubsectionModal').style.display = 'flex';
+                    document.getElementById('subsectionName').focus();
+               }
+
+               closeModal(modalId) {
+                    document.getElementById(modalId).style.display = 'none';
+                    const inputs = document.querySelectorAll(`#${modalId} input[type="text"]`);
+                    inputs.forEach(input => input.value = '');
+               }
+          }
+
+          // Global functions
+          let app;
+
+          window.showCreateNotebookModal = () => app.showCreateNotebookModal();
+          window.createNotebook = () => {
+               const name = document.getElementById('notebookName').value.trim();
+               if (name) {
+                    app.createNotebook(name);
+                    app.closeModal('createNotebookModal');
+               }
+          };
+          window.createSection = () => {
+               const name = document.getElementById('sectionName').value.trim();
+               if (name && app.tempNotebookId) {
+                    app.createSection(app.tempNotebookId, name);
+                    app.closeModal('createSectionModal');
+               }
+          };
+          window.createSubsection = () => {
+               const name = document.getElementById('subsectionName').value.trim();
+               if (name && app.tempNotebookId && app.tempSectionId) {
+                    app.createSubsection(app.tempNotebookId, app.tempSectionId, name);
+                    app.closeModal('createSubsectionModal');
+               }
+          };
+          window.closeModal = (modalId) => app.closeModal(modalId);
+          window.switchToTextMode = () => app.switchToTextMode();
+          window.switchToDrawMode = () => app.switchToDrawMode();
+
+          // Handle keyboard shortcuts
+          document.addEventListener('keydown', (e) => {
+               if (e.key === 'Enter') {
+                    if (document.getElementById('createNotebookModal').style.display === 'flex') {
+                         createNotebook();
+                    } else if (document.getElementById('createSectionModal').style.display === 'flex') {
+                         createSection();
+                    } else if (document.getElementById('createSubsectionModal').style.display === 'flex') {
+                         createSubsection();
+                    }
+               } else if (e.key === 'Escape') {
+                    closeModal('createNotebookModal');
+                    closeModal('createSectionModal');
+                    closeModal('createSubsectionModal');
+               }
+          });
+
+          // Initialize app
+          document.addEventListener('DOMContentLoaded', () => {
+               app = new Dannote();
+               window.app = app; // Make globally accessible
+          });
+
+          // Save before page unload
+          window.addEventListener('beforeunload', () => {
+               if (app) {
+                    app.saveCurrentContent();
+               }
+          });
+     </script>
 </body>
+
 </html>

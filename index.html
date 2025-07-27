@@ -6,6 +6,9 @@
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title> Dannote </title>
      <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css" />
+     <!-- ADD THESE SCRIPT TAGS IN YOUR <head> -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
      <script>
           window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
      </script>
@@ -585,6 +588,58 @@
                font-weight: 600;
                /* ... */
           }
+
+
+
+
+
+          /* ADD THIS CSS. DELETE ALL OLD HEADER/TOOLBAR STYLES. */
+
+          .content-header {
+               display: flex;
+               flex-direction: row;
+               align-items: center;
+               padding: 5px 20px 5px 60px;
+               gap: 20px;
+               background-color: #252526;
+               border-bottom: 1px solid #404040;
+          }
+
+          #pluginToolbar {
+               flex: 1;
+               /* Allows the toolbar to grow and fill the middle space */
+               min-width: 0;
+               /* Prevents layout breaking */
+               display: flex;
+               justify-content: flex-start;
+               /* Or 'flex-start' if you want buttons aligned left */
+               gap: 8px;
+               overflow-x: auto;
+               /* Makes it scrollable horizontally */
+          }
+
+          /* General style for buttons in the plugin toolbar */
+          .tool-btn {
+               background-color: #3e3e42;
+               color: #ccc;
+               border: 1px solid #555;
+               padding: 5px 15px;
+               border-radius: 4px;
+               cursor: pointer;
+               font-size: 14px;
+               white-space: nowrap;
+               /* Prevent button text from wrapping */
+          }
+
+          .tool-btn:hover {
+               background-color: #555;
+          }
+
+          /* Hides the scrollbar for a cleaner look */
+          #pluginToolbar::-webkit-scrollbar {
+               height: 0;
+               background: transparent;
+          }
      </style>
 </head>
 
@@ -623,6 +678,7 @@
                          <div class="breadcrumb" id="breadcrumb"></div>
                          <div class="page-title" id="pageTitle"></div>
                     </div>
+                    <div id="pluginToolbar"></div>
                     <div class="header-right">
                          <div class="stroke-controls">
                               <div class="control-group">
@@ -706,6 +762,7 @@
 
      <script type="module">
           import * as ExcalidrawLib from 'https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.js?external=react,react-dom';
+          const { convertToExcalidrawElements } = ExcalidrawLib;
           import React from "react";
           import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
 
@@ -796,7 +853,18 @@
                     this.excalidrawRoot = null;
                     this.isLoading = false;
                     this.saveTimeout = null; // Add this line
+                    this.currentTheme = 'dark';
                     // this.init();
+                    this.pluginButtons = [
+                         {
+                              label: '⇔ Theme', // Text on the button
+                              action: 'pluginThemeSwitch' // The EXACT name of the function to call
+                         },
+                         {
+                              label: 'fx', // The text on the button
+                              action: 'pluginShowMathPlotter' // The function that will run on click
+                         }
+                    ];
                }
 
                async init() {
@@ -822,6 +890,7 @@
                     }
 
                     this.renderColorPalette()
+                    this.renderPlugins();
                     this.applySidebarState()
                }
 
@@ -1171,7 +1240,7 @@
                          files: initialData?.files || {}, // Pass files here!
                          appState: {
                               // Your default settings
-                              theme: 'dark',
+                              theme: this.currentTheme,
                               zenModeEnabled: true,
                               currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.3),
                               currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
@@ -1267,6 +1336,231 @@
                     });
                     clickedButton.classList.add('active');
                }
+
+               // Add this function inside the Dannote class
+               renderPlugins() {
+                    const container = document.getElementById('pluginToolbar');
+                    if (!container) return;
+
+                    // Clear any existing buttons
+                    container.innerHTML = '';
+
+                    // Create a button for each entry in the pluginButtons array
+                    this.pluginButtons.forEach(button => {
+                         const btnEl = document.createElement('button');
+                         btnEl.className = 'tool-btn';
+                         btnEl.textContent = button.label;
+                         // Wire up the onclick to call the correct function by its name
+                         btnEl.onclick = (e) => {
+                              if (typeof this[button.action] === 'function') {
+                                   this[button.action](e);
+                              }
+                         };
+                         container.appendChild(btnEl);
+                    });
+               }
+
+               // Add this function inside the Dannote class
+               pluginThemeSwitch() {
+                    if (!this.excalidrawAPI) return;
+
+                    // 1. Toggle the theme state
+                    const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+                    this.currentTheme = newTheme;
+
+                    // 2. Update the Excalidraw canvas
+                    this.excalidrawAPI.updateScene({
+                         appState: {
+                              theme: newTheme
+                         }
+                    });
+               }
+
+               // Replace your entire pluginShowMath-Plotter function with this
+               pluginShowMathPlotter(event) {
+                    const existingUI = document.getElementById('math-plotter-ui');
+                    if (existingUI) existingUI.remove();
+
+                    const button = event.target;
+                    const rect = button.getBoundingClientRect();
+
+                    // --- Create UI elements ---
+                    const ui = document.createElement('div');
+                    ui.id = 'math-plotter-ui';
+
+                    const header = document.createElement('div');
+                    header.innerHTML = `<span>Math Plotter</span>`;
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '×';
+                    closeBtn.onclick = () => ui.remove();
+                    header.appendChild(closeBtn);
+
+                    const content = document.createElement('div');
+
+                    // Equation Input
+                    content.innerHTML = `<label>Enter equation (e.g., y = x^2)</label>`;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = 'y = sin(x) * 50';
+
+                    // Line Thickness Slider
+                    const thicknessLabel = document.createElement('label');
+                    thicknessLabel.textContent = 'Line Thickness';
+                    const thicknessSlider = document.createElement('input');
+                    thicknessSlider.type = 'range';
+                    thicknessSlider.min = 0.5;
+                    thicknessSlider.max = 5;
+                    thicknessSlider.step = 0.5;
+                    thicknessSlider.value = 1.5;
+
+                    // X-Axis Ticks Slider
+                    const xTicksLabel = document.createElement('label');
+                    xTicksLabel.textContent = 'X-Axis Ticks';
+                    const xTicksSlider = document.createElement('input');
+                    xTicksSlider.type = 'range';
+                    xTicksSlider.min = 2;
+                    xTicksSlider.max = 20;
+                    xTicksSlider.step = 1;
+                    xTicksSlider.value = 5;
+
+                    // Y-Axis Ticks Slider
+                    const yTicksLabel = document.createElement('label');
+                    yTicksLabel.textContent = 'Y-Axis Ticks';
+                    const yTicksSlider = document.createElement('input');
+                    yTicksSlider.type = 'range';
+                    yTicksSlider.min = 2;
+                    yTicksSlider.max = 20;
+                    yTicksSlider.step = 1;
+                    yTicksSlider.value = 5;
+
+                    // Axes Visibility Checkboxes
+                    const axesContainer = document.createElement('div');
+                    axesContainer.innerHTML = `
+        <label><input type="checkbox" id="show-x-axis" checked> Show X-Axis</label>
+        <label><input type="checkbox" id="show-y-axis" checked> Show Y-Axis</label>
+    `;
+
+                    // Plot Button
+                    const plotBtn = document.createElement('button');
+                    plotBtn.textContent = 'Plot Equation';
+                    plotBtn.onclick = () => {
+                         this.plotEquation({
+                              equation: input.value,
+                              thickness: parseFloat(thicknessSlider.value),
+                              xTicks: parseInt(xTicksSlider.value),
+                              yTicks: parseInt(yTicksSlider.value),
+                              showXAxis: document.getElementById('show-x-axis').checked,
+                              showYAxis: document.getElementById('show-y-axis').checked,
+                         });
+                         ui.remove();
+                    };
+                    input.onkeydown = (e) => { if (e.key === 'Enter') plotBtn.click(); };
+
+                    // Append all elements
+                    content.appendChild(input);
+                    content.appendChild(thicknessLabel);
+                    content.appendChild(thicknessSlider);
+                    content.appendChild(xTicksLabel);
+                    content.appendChild(xTicksSlider);
+                    content.appendChild(yTicksLabel);
+                    content.appendChild(yTicksSlider);
+                    content.appendChild(axesContainer);
+                    content.appendChild(plotBtn);
+                    ui.appendChild(header);
+                    ui.appendChild(content);
+
+                    // Apply all styles dynamically
+                    Object.assign(ui.style, {
+                         position: 'absolute', visibility: 'hidden', width: '280px',
+                         backgroundColor: '#2d2d30', border: '1px solid #404040',
+                         borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002'
+                    });
+                    Object.assign(header.style, {
+                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px',
+                         backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600'
+                    });
+                    Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
+                    Object.assign(content.style, { padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' });
+                    Object.assign(axesContainer.style, { display: 'flex', justifyContent: 'space-around', color: '#ccc', fontSize: '13px' });
+                    Object.assign(input.style, { padding: '8px', backgroundColor: '#3e3e42', border: '1px solid #555', borderRadius: '4px', color: '#f0f0f0' });
+                    Object.assign(plotBtn.style, { backgroundColor: '#0078d4', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' });
+
+                    // Add to body to calculate its height for positioning
+                    document.body.appendChild(ui);
+
+                    // Set final position and make it visible
+                    ui.style.left = `${rect.left}px`;
+                    ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
+                    ui.style.visibility = 'visible';
+
+                    input.focus();
+               }
+
+               // Replace your entire plotEquation function with this
+               async plotEquation(options) {
+                    const { equation: equationInput, thickness, xTicks, yTicks, showXAxis, showYAxis } = options;
+                    if (!this.excalidrawAPI || !equationInput) return;
+
+                    try {
+                         // GET THE CURRENT STROKE COLOR from the Excalidraw app state
+                         const currentStrokeColor = this.excalidrawAPI.getAppState().currentItemStrokeColor;
+
+                         const equation = equationInput.split('=')[1].trim();
+                         const code = math.parse(equation).compile();
+                         const data = d3.range(-10, 10.1, 0.1).map(x => ({ x, y: code.evaluate({ x }) })).filter(d => isFinite(d.y));
+
+                         if (data.length < 2) throw new Error("Not enough data points to plot.");
+
+                         const width = 400, height = 300;
+                         const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+                         const svg = d3.create("svg").attr("width", width).attr("height", height).attr("viewBox", [0, 0, width, height]).style("background-color", "transparent");
+                         const x = d3.scaleLinear().domain(d3.extent(data, d => d.x)).nice().range([margin.left, width - margin.right]);
+                         const y = d3.scaleLinear().domain(d3.extent(data, d => d.y)).nice().range([height - margin.bottom, margin.top]);
+
+                         // Conditionally draw axes based on options
+                         if (showXAxis) {
+                              svg.append("g").attr("transform", `translate(0,${height - margin.bottom})`).call(d3.axisBottom(x).ticks(xTicks));
+                         }
+                         if (showYAxis) {
+                              svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y).ticks(yTicks));
+                         }
+
+                         // Use the thickness and current stroke color from options
+                         svg.append("path")
+                              .datum(data)
+                              .attr("fill", "none")
+                              .attr("stroke", currentStrokeColor) // USE THE CURRENT COLOR
+                              .attr("stroke-width", thickness)
+                              .attr("d", d3.line().x(d => x(d.x)).y(d => y(d.y)));
+
+                         const svgString = new XMLSerializer().serializeToString(svg.node());
+                         const dataURL = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
+
+                         const existingElements = this.excalidrawAPI.getSceneElements();
+                         const selected = existingElements.find(el => el.isSelected);
+                         const fileId = this.generateId();
+
+                         const imageSkeleton = {
+                              type: "image",
+                              x: selected ? selected.x : 0,
+                              y: selected ? selected.y + selected.height + 20 : 0,
+                              width: width, height: height, fileId: fileId,
+                              roundness: { type: 2 } // Optional: adds a slight curve to the image frame
+                         };
+
+                         const newElements = ExcalidrawLib.convertToExcalidrawElements([imageSkeleton]);
+                         this.excalidrawAPI.addFiles({ [fileId]: { mimeType: "image/svg+xml", dataURL, id: fileId } });
+                         this.excalidrawAPI.updateScene({
+                              elements: [...existingElements, ...newElements]
+                         });
+
+                    } catch (error) {
+                         console.error("Math Plotter Error:", error);
+                         alert(`Could not plot the equation. Please check the syntax.\nError: ${error.message}`);
+                    }
+               }
+
 
                // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
                showMoveUI(type, notebookId, sectionId, subsectionId = null) {

@@ -1386,48 +1386,52 @@
 
                // Also update the saveDrawingData method to ensure proper data structure:
                async saveDrawingData(elements, appState) {
-                    if (!this.currentEditingId || !this.excalidrawAPI) return;
+                    clearTimeout(this.saveTimeout);
 
-                    const files = this.excalidrawAPI.getFiles();
+                    this.saveTimeout = setTimeout(async () => {
 
-                    // Create a clean appState object with only serializable properties
-                    const cleanAppState = {
-                         viewBackgroundColor: appState.viewBackgroundColor,
-                         currentItemStrokeColor: appState.currentItemStrokeColor,
-                         currentItemBackgroundColor: appState.currentItemBackgroundColor,
-                         currentItemFillStyle: appState.currentItemFillStyle,
-                         currentItemFontFamily: appState.currentItemFontFamily,
-                         currentItemStrokeWidth: appState.currentItemStrokeWidth,
-                         currentItemStrokeStyle: appState.currentItemStrokeStyle,
-                         currentItemRoughness: appState.currentItemRoughness,
-                         currentItemOpacity: appState.currentItemOpacity,
-                         gridSize: appState.gridSize,
-                         colorPalette: appState.colorPalette,
-                         zoom: appState.zoom,
-                         scrollX: appState.scrollX,
-                         scrollY: appState.scrollY
-                         // Explicitly exclude collaborators and other non-serializable properties
-                    };
+                         if (!this.currentEditingId || !this.excalidrawAPI) return;
 
-                    const drawingData = {
-                         elements: elements,
-                         appState: cleanAppState,
-                         files: files
-                    };
+                         const files = this.excalidrawAPI.getFiles();
 
-                    if (this.currentSubsection) {
-                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
-                         const section = notebook.sections.find(s => s.id === this.currentSection);
-                         const subsection = section.subsections.find(sub => sub.id === this.currentSubsection);
-                         subsection.drawingData = drawingData;
-                    } else if (this.currentSection) {
-                         const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
-                         const section = notebook.sections.find(s => s.id === this.currentSection);
-                         section.drawingData = drawingData;
-                    }
+                         // Create a clean appState object with only serializable properties
+                         const cleanAppState = {
+                              viewBackgroundColor: appState.viewBackgroundColor,
+                              currentItemStrokeColor: appState.currentItemStrokeColor,
+                              currentItemBackgroundColor: appState.currentItemBackgroundColor,
+                              currentItemFillStyle: appState.currentItemFillStyle,
+                              currentItemFontFamily: appState.currentItemFontFamily,
+                              currentItemStrokeWidth: appState.currentItemStrokeWidth,
+                              currentItemStrokeStyle: appState.currentItemStrokeStyle,
+                              currentItemRoughness: appState.currentItemRoughness,
+                              currentItemOpacity: appState.currentItemOpacity,
+                              gridSize: appState.gridSize,
+                              colorPalette: appState.colorPalette,
+                              zoom: appState.zoom,
+                              scrollX: appState.scrollX,
+                              scrollY: appState.scrollY
+                              // Explicitly exclude collaborators and other non-serializable properties
+                         };
 
+                         const drawingData = {
+                              elements: elements,
+                              appState: cleanAppState,
+                              files: files
+                         };
 
-                    await this.saveToStorage();
+                         if (this.currentSubsection) {
+                              const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                              const section = notebook.sections.find(s => s.id === this.currentSection);
+                              const subsection = section.subsections.find(sub => sub.id === this.currentSubsection);
+                              subsection.drawingData = drawingData;
+                         } else if (this.currentSection) {
+                              const notebook = this.notebooks.find(n => n.id === this.currentNotebook);
+                              const section = notebook.sections.find(s => s.id === this.currentSection);
+                              section.drawingData = drawingData;
+                         }
+
+                         await this.saveToStorage();
+                    }, 5000)
                }
 
 
@@ -1448,7 +1452,6 @@
 
                async saveCurrentContent() {
                     if (!this.currentEditingId) return;
-
 
                     if (this.currentSubsection) {
                          const notebook = this.notebooks.find(n => n.id === this.currentNotebook);

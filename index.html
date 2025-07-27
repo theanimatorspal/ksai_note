@@ -9,6 +9,7 @@
      <!-- ADD THESE SCRIPT TAGS IN YOUR <head> -->
      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
      <script>
           window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
      </script>
@@ -857,12 +858,16 @@
                     // this.init();
                     this.pluginButtons = [
                          {
-                              label: '⇔ Theme', // Text on the button
+                              label: '⇔', // Text on the button
                               action: 'pluginThemeSwitch' // The EXACT name of the function to call
                          },
                          {
-                              label: 'fx', // The text on the button
+                              label: 'plt', // The text on the button
                               action: 'pluginShowMathPlotter' // The function that will run on click
+                         },
+                         {
+                              label: 'Md', // The text on the button
+                              action: 'pluginShowMarkdownRenderer' // The function to call
                          }
                     ];
                }
@@ -1559,6 +1564,231 @@
                          console.error("Math Plotter Error:", error);
                          alert(`Could not plot the equation. Please check the syntax.\nError: ${error.message}`);
                     }
+               }
+
+               // Add these two new functions inside your Dannote class
+
+               /**
+                * Creates and displays the Markdown renderer UI dynamically.
+                */
+               // Replace your existing pluginShowMarkdownRenderer function
+               pluginShowMarkdownRenderer(event) {
+                    const existingUI = document.getElementById('markdown-renderer-ui');
+                    if (existingUI) existingUI.remove();
+
+                    const button = event.target;
+                    const rect = button.getBoundingClientRect();
+
+                    // --- The Markdown content to pre-fill ---
+                    const markdownContent = `🔥 BRO EXPLAINER: Vesting ≠ Staking
+These two might look similar on the surface (your tokens are locked), but they’re totally different beasts 🐉🆚🐍
+
+| 📖 DEFINITION COMPARISON: | |
+| :--- | :--- |
+| **🧩 Concept** | **🔍 Definition** |
+| **Vesting** | ⏳ Tokens are locked for a set time, and gradually become claimable over time. Common for team, investors, airdrops |
+| **Staking** | 🔐 Tokens are locked voluntarily to secure a network or protocol, and you earn rewards in return |
+
+🧪 IN PLAIN BRO TERMS:
+
+| 🔐 Vesting | 🔥 Staking |
+| :--- | :--- |
+| Think "paycheck on schedule" | Think "deposit that earns interest" |
+| You can’t touch tokens until time unlocks them | You can unstake anytime (with/without delay) |
+| No yield/rewards — just waiting 🕰️ | You earn yield, rewards, fees, or governance power |
+| Common for team/investors to prevent dumps | Common for users/validators to secure a chain |
+
+🧠 Example:
+
+| Scenario | Vesting | Staking |
+| :--- | :--- | :--- |
+| You join a token project as a dev | Get 100,000 tokens vesting over 4 years | You take 10,000 unlocked tokens and stake them to earn 5% APR |
+| You get 25% unlocked after 1 year | You earn nothing till it unlocks | You earn rewards daily (maybe restakable) |
+
+⏳ VESTING SCHEDULE EXAMPLE:
+- 100,000 tokens
+- 4-year vesting
+- 1-year cliff
+- **🔐 Year 0–1:** 0 tokens available
+- **✅ Year 1:** 25,000 unlocked
+- **🪜 Monthly unlock:** ~2,083 per month after that
+
+💸 STAKING EXAMPLE:
+- Stake 10,000 SOL into validator pool
+- APR = 6%
+- After 1 year, you earn 600 SOL rewards (if kept staked)
+- Unstake anytime (some networks: delay like 2-3 days)
+
+⚖️ KEY DIFFERENCES
+
+| Feature | ✅ Vesting | ✅ Staking |
+| :--- | :--- | :--- |
+| **Who uses it?** | Teams, investors | Anyone |
+| **Purpose** | Prevent token dumping | Secure network, earn yield |
+| **Optional?** | ❌ No (contractual) | ✅ Yes |
+| **Reward?** | ❌ No | ✅ Yes |
+| **Unlock mechanism** | Time-based | User-controlled |
+| **Built-in to tokenomics?** | Often yes (vesting schedule) | Yes (if PoS chain) |
+
+🧠 TL;DR
+- ❌ Vesting = tokens locked based on time, no rewards
+- ✅ Staking = tokens locked to earn rewards or secure the network`;
+
+                    // --- Create UI elements ---
+                    const ui = document.createElement('div');
+                    ui.id = 'markdown-renderer-ui';
+
+                    const header = document.createElement('div');
+                    header.innerHTML = `<span>Markdown Renderer</span>`;
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '×';
+                    closeBtn.onclick = () => ui.remove();
+                    header.appendChild(closeBtn);
+
+                    const content = document.createElement('div');
+                    const textarea = document.createElement('textarea');
+                    textarea.value = markdownContent; // Pre-fill the content
+
+                    const renderBtn = document.createElement('button');
+                    renderBtn.textContent = 'Render Markdown';
+                    renderBtn.onclick = () => {
+                         this.renderMarkdown(textarea.value);
+                         ui.remove();
+                    };
+
+                    content.appendChild(textarea);
+                    content.appendChild(renderBtn);
+                    ui.appendChild(header);
+                    ui.appendChild(content);
+
+                    // --- Styles and Positioning (no changes here) ---
+                    Object.assign(ui.style, { position: 'absolute', visibility: 'hidden', width: '400px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
+                    Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600' });
+                    Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
+                    Object.assign(content.style, { padding: '10px' });
+                    Object.assign(textarea.style, { width: '100%', height: '300px', padding: '8px', backgroundColor: '#1e1e1e', border: '1px solid #555', borderRadius: '4px', color: '#f0f0f0', resize: 'vertical' });
+                    Object.assign(renderBtn.style, { backgroundColor: '#0078d4', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600', width: '100%', marginTop: '10px' });
+
+                    document.body.appendChild(ui);
+                    ui.style.left = `${rect.left}px`;
+                    ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
+                    ui.style.visibility = 'visible';
+                    textarea.focus();
+               }
+
+
+               // Replace your entire renderMarkdown function with this
+               async renderMarkdown(markdownText) {
+                    if (!this.excalidrawAPI || !markdownText.trim()) return;
+
+                    // 1. GET CURRENT STYLES FROM THE APP
+                    const appState = this.excalidrawAPI.getAppState();
+                    const FONT_FAMILY = appState.currentItemFontFamily;
+                    const SIZES = {
+                         H1: parseInt(document.querySelector('.size-btn[value="58"]').value),
+                         H2: parseInt(document.querySelector('.size-btn[value="48"]').value),
+                         H3: parseInt(document.querySelector('.size-btn[value="38"]').value),
+                         N: parseInt(document.querySelector('.size-btn.active').value)
+                    };
+
+                    // --- THIS IS THE SIMPLIFIED PART ---
+                    // Set a fixed, contrasting color scheme for table headers
+                    const headerBgColor = '#333333'; // Dark gray background
+                    const headerFontColor = '#ffffff'; // White text
+                    // --- END SIMPLIFIED PART ---
+
+                    const elementSkeletons = [];
+                    let currentY = 0;
+                    const PADDING = 15;
+                    const LINE_HEIGHT = 1.25;
+
+                    const tokens = marked.lexer(markdownText);
+
+                    tokens.forEach(token => {
+                         switch (token.type) {
+                              case 'heading':
+                                   elementSkeletons.push({
+                                        type: 'text', text: token.text, y: currentY,
+                                        fontSize: SIZES[`H${token.depth}`] || SIZES.N,
+                                        fontFamily: FONT_FAMILY
+                                   });
+                                   currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
+                                   break;
+                              case 'paragraph':
+                                   elementSkeletons.push({
+                                        type: 'text', text: token.text, y: currentY,
+                                        fontSize: SIZES.N, fontFamily: FONT_FAMILY
+                                   });
+                                   currentY += SIZES.N * LINE_HEIGHT * token.text.split('\n').length + PADDING;
+                                   break;
+                              case 'list':
+                                   token.items.forEach(item => {
+                                        elementSkeletons.push({
+                                             type: 'text', text: `• ${item.text}`, y: currentY, x: 20,
+                                             fontSize: SIZES.N, fontFamily: FONT_FAMILY
+                                        });
+                                        currentY += SIZES.N * LINE_HEIGHT;
+                                   });
+                                   currentY += PADDING;
+                                   break;
+                              case 'table':
+                                   const colWidths = new Array(token.header.length).fill(0);
+                                   const allRows = [token.header, ...token.rows];
+
+                                   allRows.forEach(row => {
+                                        row.forEach((cell, i) => {
+                                             const cellWidth = cell.text.length * (SIZES.N * 0.6);
+                                             if (cellWidth > colWidths[i]) colWidths[i] = cellWidth;
+                                        });
+                                   });
+
+                                   allRows.forEach((row, rowIndex) => {
+                                        let currentX = 0;
+                                        row.forEach((cell, colIndex) => {
+                                             const cellWidth = colWidths[colIndex] + PADDING * 2;
+                                             const cellHeight = (cell.text.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
+
+                                             elementSkeletons.push({
+                                                  type: 'rectangle',
+                                                  x: currentX, y: currentY,
+                                                  width: cellWidth, height: cellHeight,
+                                                  strokeColor: '#444',
+                                                  backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent', // Use the fixed color
+                                                  fillStyle: 'solid'
+                                             });
+                                             elementSkeletons.push({
+                                                  type: 'text',
+                                                  text: cell.text,
+                                                  x: currentX + PADDING, y: currentY + (PADDING / 2),
+                                                  fontSize: SIZES.N, fontFamily: FONT_FAMILY,
+                                                  textAlign: token.align[colIndex] || 'left',
+                                                  strokeColor: rowIndex === 0 ? headerFontColor : undefined // Use the fixed color
+                                             });
+                                             currentX += cellWidth;
+                                        });
+                                        currentY += (row[0].text.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
+                                   });
+                                   currentY += PADDING;
+                                   break;
+                              case 'space':
+                                   currentY += SIZES.N;
+                                   break;
+                         }
+                    });
+
+                    const startX = -appState.scrollX + (appState.width / 2);
+                    const startY = -appState.scrollY + (appState.height / 2);
+
+                    elementSkeletons.forEach(sk => {
+                         sk.x = (sk.x || 0) + startX;
+                         sk.y = (sk.y || 0) + startY;
+                    });
+
+                    const existingElements = this.excalidrawAPI.getSceneElements();
+                    const newElements = ExcalidrawLib.convertToExcalidrawElements(elementSkeletons);
+                    this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
+                    this.excalidrawAPI.scrollToContent(newElements[0]);
                }
 
 

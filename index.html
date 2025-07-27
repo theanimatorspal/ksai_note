@@ -684,7 +684,7 @@
                          <div class="stroke-controls">
                               <div class="control-group">
                                    <label for="strokeWidthSlider">🎨Stroke:</label>
-                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.01" value="0.3">
+                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.3" value="0.3">
                                    <span id="strokeWidthValue">0.3</span>
                               </div>
                               <div class="color-palette" id="colorPalette"></div>
@@ -1503,14 +1503,14 @@
                }
 
                // Replace your entire plotEquation function with this
+
+               // Replace your entire plotEquation function with this
                async plotEquation(options) {
-                    const { equation: equationInput, thickness, xTicks, yTicks, showXAxis, showYAxis } = options;
+                    const { equation: equationInput, thickness, ticks } = options;
                     if (!this.excalidrawAPI || !equationInput) return;
 
                     try {
-                         // GET THE CURRENT STROKE COLOR from the Excalidraw app state
                          const currentStrokeColor = this.excalidrawAPI.getAppState().currentItemStrokeColor;
-
                          const equation = equationInput.split('=')[1].trim();
                          const code = math.parse(equation).compile();
                          const data = d3.range(-10, 10.1, 0.1).map(x => ({ x, y: code.evaluate({ x }) })).filter(d => isFinite(d.y));
@@ -1523,37 +1523,34 @@
                          const x = d3.scaleLinear().domain(d3.extent(data, d => d.x)).nice().range([margin.left, width - margin.right]);
                          const y = d3.scaleLinear().domain(d3.extent(data, d => d.y)).nice().range([height - margin.bottom, margin.top]);
 
-                         // Conditionally draw axes based on options
-                         if (showXAxis) {
-                              svg.append("g").attr("transform", `translate(0,${height - margin.bottom})`).call(d3.axisBottom(x).ticks(xTicks));
-                         }
-                         if (showYAxis) {
-                              svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y).ticks(yTicks));
-                         }
+                         svg.append("g").attr("transform", `translate(0,${height - margin.bottom})`).call(d3.axisBottom(x).ticks(ticks));
+                         svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y).ticks(ticks));
 
-                         // Use the thickness and current stroke color from options
-                         svg.append("path")
-                              .datum(data)
-                              .attr("fill", "none")
-                              .attr("stroke", currentStrokeColor) // USE THE CURRENT COLOR
-                              .attr("stroke-width", thickness)
-                              .attr("d", d3.line().x(d => x(d.x)).y(d => y(d.y)));
+                         svg.append("path").datum(data).attr("fill", "none").attr("stroke", currentStrokeColor).attr("stroke-width", thickness).attr("d", d3.line().x(d => x(d.x)).y(d => y(d.y)));
 
                          const svgString = new XMLSerializer().serializeToString(svg.node());
                          const dataURL = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
 
-                         const existingElements = this.excalidrawAPI.getSceneElements();
-                         const selected = existingElements.find(el => el.isSelected);
+                         // --- CORRECTED POSITIONING LOGIC ---
+                         // 1. Get the current state of the Excalidraw app
+                         const appState = this.excalidrawAPI.getAppState();
+
+                         // 2. Calculate the center of the current viewport
+                         const startX = -appState.scrollX + appState.width / 2;
+                         const startY = -appState.scrollY + appState.height / 2;
+
                          const fileId = this.generateId();
 
                          const imageSkeleton = {
                               type: "image",
-                              x: selected ? selected.x : 0,
-                              y: selected ? selected.y + selected.height + 20 : 0,
-                              width: width, height: height, fileId: fileId,
-                              roundness: { type: 2 } // Optional: adds a slight curve to the image frame
+                              x: startX,
+                              y: startY,
+                              width: width,
+                              height: height,
+                              fileId: fileId
                          };
 
+                         const existingElements = this.excalidrawAPI.getSceneElements();
                          const newElements = ExcalidrawLib.convertToExcalidrawElements([imageSkeleton]);
                          this.excalidrawAPI.addFiles({ [fileId]: { mimeType: "image/svg+xml", dataURL, id: fileId } });
                          this.excalidrawAPI.updateScene({
@@ -1565,8 +1562,6 @@
                          alert(`Could not plot the equation. Please check the syntax.\nError: ${error.message}`);
                     }
                }
-
-               // Add these two new functions inside your Dannote class
 
                /**
                 * Creates and displays the Markdown renderer UI dynamically.
@@ -1580,59 +1575,7 @@
                     const rect = button.getBoundingClientRect();
 
                     // --- The Markdown content to pre-fill ---
-                    const markdownContent = `🔥 BRO EXPLAINER: Vesting ≠ Staking
-These two might look similar on the surface (your tokens are locked), but they’re totally different beasts 🐉🆚🐍
-
-| 📖 DEFINITION COMPARISON: | |
-| :--- | :--- |
-| **🧩 Concept** | **🔍 Definition** |
-| **Vesting** | ⏳ Tokens are locked for a set time, and gradually become claimable over time. Common for team, investors, airdrops |
-| **Staking** | 🔐 Tokens are locked voluntarily to secure a network or protocol, and you earn rewards in return |
-
-🧪 IN PLAIN BRO TERMS:
-
-| 🔐 Vesting | 🔥 Staking |
-| :--- | :--- |
-| Think "paycheck on schedule" | Think "deposit that earns interest" |
-| You can’t touch tokens until time unlocks them | You can unstake anytime (with/without delay) |
-| No yield/rewards — just waiting 🕰️ | You earn yield, rewards, fees, or governance power |
-| Common for team/investors to prevent dumps | Common for users/validators to secure a chain |
-
-🧠 Example:
-
-| Scenario | Vesting | Staking |
-| :--- | :--- | :--- |
-| You join a token project as a dev | Get 100,000 tokens vesting over 4 years | You take 10,000 unlocked tokens and stake them to earn 5% APR |
-| You get 25% unlocked after 1 year | You earn nothing till it unlocks | You earn rewards daily (maybe restakable) |
-
-⏳ VESTING SCHEDULE EXAMPLE:
-- 100,000 tokens
-- 4-year vesting
-- 1-year cliff
-- **🔐 Year 0–1:** 0 tokens available
-- **✅ Year 1:** 25,000 unlocked
-- **🪜 Monthly unlock:** ~2,083 per month after that
-
-💸 STAKING EXAMPLE:
-- Stake 10,000 SOL into validator pool
-- APR = 6%
-- After 1 year, you earn 600 SOL rewards (if kept staked)
-- Unstake anytime (some networks: delay like 2-3 days)
-
-⚖️ KEY DIFFERENCES
-
-| Feature | ✅ Vesting | ✅ Staking |
-| :--- | :--- | :--- |
-| **Who uses it?** | Teams, investors | Anyone |
-| **Purpose** | Prevent token dumping | Secure network, earn yield |
-| **Optional?** | ❌ No (contractual) | ✅ Yes |
-| **Reward?** | ❌ No | ✅ Yes |
-| **Unlock mechanism** | Time-based | User-controlled |
-| **Built-in to tokenomics?** | Often yes (vesting schedule) | Yes (if PoS chain) |
-
-🧠 TL;DR
-- ❌ Vesting = tokens locked based on time, no rewards
-- ✅ Staking = tokens locked to earn rewards or secure the network`;
+                    const markdownContent = '';
 
                     // --- Create UI elements ---
                     const ui = document.createElement('div');
@@ -1679,10 +1622,10 @@ These two might look similar on the surface (your tokens are locked), but they�
 
 
                // Replace your entire renderMarkdown function with this
+               // Replace your entire renderMarkdown function with this
                async renderMarkdown(markdownText) {
                     if (!this.excalidrawAPI || !markdownText.trim()) return;
 
-                    // 1. GET CURRENT STYLES FROM THE APP
                     const appState = this.excalidrawAPI.getAppState();
                     const FONT_FAMILY = appState.currentItemFontFamily;
                     const SIZES = {
@@ -1692,11 +1635,8 @@ These two might look similar on the surface (your tokens are locked), but they�
                          N: parseInt(document.querySelector('.size-btn.active').value)
                     };
 
-                    // --- THIS IS THE SIMPLIFIED PART ---
-                    // Set a fixed, contrasting color scheme for table headers
-                    const headerBgColor = '#333333'; // Dark gray background
-                    const headerFontColor = '#ffffff'; // White text
-                    // --- END SIMPLIFIED PART ---
+                    const headerBgColor = '#333333';
+                    const headerFontColor = '#ffffff';
 
                     const elementSkeletons = [];
                     let currentY = 0;
@@ -1706,20 +1646,21 @@ These two might look similar on the surface (your tokens are locked), but they�
                     const tokens = marked.lexer(markdownText);
 
                     tokens.forEach(token => {
+                         let skeleton = null;
                          switch (token.type) {
                               case 'heading':
-                                   elementSkeletons.push({
+                                   skeleton = {
                                         type: 'text', text: token.text, y: currentY,
                                         fontSize: SIZES[`H${token.depth}`] || SIZES.N,
                                         fontFamily: FONT_FAMILY
-                                   });
+                                   };
                                    currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
                                    break;
                               case 'paragraph':
-                                   elementSkeletons.push({
+                                   skeleton = {
                                         type: 'text', text: token.text, y: currentY,
                                         fontSize: SIZES.N, fontFamily: FONT_FAMILY
-                                   });
+                                   };
                                    currentY += SIZES.N * LINE_HEIGHT * token.text.split('\n').length + PADDING;
                                    break;
                               case 'list':
@@ -1732,6 +1673,39 @@ These two might look similar on the surface (your tokens are locked), but they�
                                    });
                                    currentY += PADDING;
                                    break;
+
+                              // --- UPDATED CODE BLOCK LOGIC ---
+                              // This is the updated 'code' block for your renderMarkdown function
+                              case 'code':
+                                   const codeText = token.text;
+                                   const lineCount = codeText.split('\n').length;
+                                   const FONT_SIZE = 20; // Increased font size
+                                   const CHAR_WIDTH = FONT_SIZE * 0.6;
+                                   const maxWidth = Math.max(...codeText.split('\n').map(line => line.length));
+
+                                   const containerWidth = maxWidth * CHAR_WIDTH + PADDING * 2;
+                                   const containerHeight = lineCount * FONT_SIZE * LINE_HEIGHT + PADDING * 2;
+
+                                   skeleton = {
+                                        type: 'rectangle',
+                                        y: currentY,
+                                        width: containerWidth,
+                                        height: containerHeight,
+                                        backgroundColor: '#252526',
+                                        strokeColor: '#555',
+                                        roundness: { type: 2 },
+                                        label: {
+                                             text: codeText,
+                                             fontSize: FONT_SIZE, // Use the new font size
+                                             fontFamily: 3,
+                                             textAlign: 'left',
+                                             verticalAlign: 'top',
+                                             strokeColor: '#d4d4d4' // Added light gray color for contrast
+                                        }
+                                   };
+                                   currentY += containerHeight + PADDING;
+                                   break;
+
                               case 'table':
                                    const colWidths = new Array(token.header.length).fill(0);
                                    const allRows = [token.header, ...token.rows];
@@ -1750,20 +1724,17 @@ These two might look similar on the surface (your tokens are locked), but they�
                                              const cellHeight = (cell.text.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
 
                                              elementSkeletons.push({
-                                                  type: 'rectangle',
-                                                  x: currentX, y: currentY,
-                                                  width: cellWidth, height: cellHeight,
-                                                  strokeColor: '#444',
-                                                  backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent', // Use the fixed color
+                                                  type: 'rectangle', x: currentX, y: currentY,
+                                                  width: cellWidth, height: cellHeight, strokeColor: '#444',
+                                                  backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent',
                                                   fillStyle: 'solid'
                                              });
                                              elementSkeletons.push({
-                                                  type: 'text',
-                                                  text: cell.text,
+                                                  type: 'text', text: cell.text,
                                                   x: currentX + PADDING, y: currentY + (PADDING / 2),
                                                   fontSize: SIZES.N, fontFamily: FONT_FAMILY,
                                                   textAlign: token.align[colIndex] || 'left',
-                                                  strokeColor: rowIndex === 0 ? headerFontColor : undefined // Use the fixed color
+                                                  strokeColor: rowIndex === 0 ? headerFontColor : undefined
                                              });
                                              currentX += cellWidth;
                                         });
@@ -1774,6 +1745,9 @@ These two might look similar on the surface (your tokens are locked), but they�
                               case 'space':
                                    currentY += SIZES.N;
                                    break;
+                         }
+                         if (skeleton) {
+                              elementSkeletons.push(skeleton);
                          }
                     });
 
@@ -1790,7 +1764,6 @@ These two might look similar on the surface (your tokens are locked), but they�
                     this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
                     this.excalidrawAPI.scrollToContent(newElements[0]);
                }
-
 
                // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
                showMoveUI(type, notebookId, sectionId, subsectionId = null) {

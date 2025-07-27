@@ -2424,27 +2424,39 @@
                               let itemId;
                               if (type === 'section') {
                                    item = notebook.sections[sectionIndex];
-                                   itemId = 'page-' + sectionIndex;
+                                   itemId = `page-${sectionIndex}`;
                               } else {
                                    item = notebook.sections[sectionIndex].subsections[subsectionIndex];
-                                   itemId = 'page-' + sectionIndex + '-' + subsectionIndex;
+                                   itemId = `page-${sectionIndex}-${subsectionIndex}`;
                               }
-                              if (activeElement) { activeElement.classList.remove('active'); }
+
+                              if (activeElement) {
+                                   activeElement.classList.remove('active');
+                              }
                               activeElement = document.getElementById(itemId);
-                              if (activeElement) { activeElement.classList.add('active'); }
+                              if (activeElement) {
+                                   activeElement.classList.add('active');
+                              }
 
                               const drawingData = item.drawingData || { elements: [], appState: {} };
 
                               if (excalidrawAPI) {
-                                   // --- MODIFIED: Always include the master 'allFiles' object in the scene update ---
-                                   // This ensures Excalidraw can find the data for any image on the current page.
                                    const sceneToLoad = {
                                         elements: drawingData.elements,
                                         appState: { ...(drawingData.appState || {}), theme: 'dark' },
-                                        files: allFiles // Use the master files object here!
+                                        files: allFiles
                                    };
-                                   // Use a short timeout to ensure the UI updates before the scene loads
-                                   setTimeout(() => { excalidrawAPI.updateScene(sceneToLoad); }, 50);
+
+                                   // Use a short timeout to ensure the DOM is ready for the new scene
+                                   setTimeout(() => {
+                                        excalidrawAPI.updateScene(sceneToLoad);
+
+                                        // After updating the scene, scroll and zoom to fit the new content.
+                                        // We check if there are any elements to prevent errors on empty pages.
+                                        if (sceneToLoad.elements && sceneToLoad.elements.length > 0) {
+                                             excalidrawAPI.scrollToContent(sceneToLoad.elements, { fitToContent: true });
+                                        }
+                                   }, 100); // A 100ms delay is usually safe for the scene to update.
                               }
                          };
 

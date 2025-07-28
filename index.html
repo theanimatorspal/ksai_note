@@ -1285,55 +1285,102 @@
                     }, 200)
                }
 
-
                setStrokeWidth(width) {
+                    if (!this.excalidrawAPI) return;
+
                     const numericWidth = parseFloat(width);
-                    if (this.excalidrawAPI) {
-                         this.excalidrawAPI.updateScene({
-                              appState: { currentItemStrokeWidth: numericWidth }
+                    const selectedElementIds = this.excalidrawAPI.getAppState().selectedElementIds;
+
+                    if (Object.keys(selectedElementIds).length > 0) {
+                         const allElements = this.excalidrawAPI.getSceneElements();
+                         const newElements = allElements.map(element => {
+                              if (selectedElementIds[element.id]) {
+                                   return { ...element, strokeWidth: numericWidth };
+                              }
+                              return element;
                          });
+                         this.excalidrawAPI.updateScene({ elements: newElements });
                     }
-                    // Update the slider's initialData default so it feels consistent
-                    const slider = document.getElementById('strokeWidthSlider');
-                    if (slider) slider.value = numericWidth;
+
+                    this.excalidrawAPI.updateScene({
+                         appState: { currentItemStrokeWidth: numericWidth }
+                    });
+
                     const valueDisplay = document.getElementById('strokeWidthValue');
                     if (valueDisplay) valueDisplay.textContent = numericWidth.toFixed(1);
                }
 
+
                setStrokeColor(color) {
-                    if (this.excalidrawAPI) {
-                         this.excalidrawAPI.updateScene({
-                              appState: { currentItemStrokeColor: color }
+                    if (!this.excalidrawAPI) return;
+
+                    const selectedElementIds = this.excalidrawAPI.getAppState().selectedElementIds;
+
+                    if (Object.keys(selectedElementIds).length > 0) {
+                         const allElements = this.excalidrawAPI.getSceneElements();
+                         const newElements = allElements.map(element => {
+                              if (selectedElementIds[element.id]) {
+                                   return { ...element, strokeColor: color };
+                              }
+                              return element;
                          });
+                         this.excalidrawAPI.updateScene({ elements: newElements });
                     }
-                    // Update the 'active' class on the UI
+
+                    this.excalidrawAPI.updateScene({
+                         appState: { currentItemStrokeColor: color }
+                    });
+
                     document.querySelectorAll('.color-swatch').forEach(swatch => {
                          swatch.classList.toggle('active', swatch.dataset.color === color);
                     });
                }
 
-
                setFontFamily(fontValue) {
-                    // The font values for Excalidraw are numbers
+                    if (!this.excalidrawAPI) return;
+
                     const numericFont = parseInt(fontValue, 10);
-                    if (this.excalidrawAPI) {
-                         this.excalidrawAPI.updateScene({
-                              appState: {
-                                   currentItemFontFamily: numericFont
+                    const selectedElementIds = this.excalidrawAPI.getAppState().selectedElementIds;
+
+                    if (Object.keys(selectedElementIds).length > 0) {
+                         const allElements = this.excalidrawAPI.getSceneElements();
+                         const newElements = allElements.map(element => {
+                              // Check if element is a selected text element
+                              if (selectedElementIds[element.id] && element.type === 'text') {
+                                   return { ...element, fontFamily: numericFont };
                               }
+                              return element;
                          });
+                         this.excalidrawAPI.updateScene({ elements: newElements });
                     }
+
+                    // Update app state for the next new element
+                    this.excalidrawAPI.updateScene({
+                         appState: { currentItemFontFamily: numericFont }
+                    });
                }
 
-               // ADD THIS FUNCTION to control text size
                setFontSize(size, clickedButton) {
-                    if (this.excalidrawAPI) {
-                         this.excalidrawAPI.updateScene({
-                              appState: {
-                                   currentItemFontSize: size
+                    if (!this.excalidrawAPI) return;
+
+                    const selectedElementIds = this.excalidrawAPI.getAppState().selectedElementIds;
+
+                    if (Object.keys(selectedElementIds).length > 0) {
+                         const allElements = this.excalidrawAPI.getSceneElements();
+                         const newElements = allElements.map(element => {
+                              // Check if element is a selected text element
+                              if (selectedElementIds[element.id] && element.type === 'text') {
+                                   return { ...element, fontSize: size };
                               }
+                              return element;
                          });
+                         this.excalidrawAPI.updateScene({ elements: newElements });
                     }
+
+                    // Update app state for the next new element
+                    this.excalidrawAPI.updateScene({
+                         appState: { currentItemFontSize: size }
+                    });
 
                     // Update the 'active' class on the UI buttons
                     document.querySelectorAll('.size-btn').forEach(btn => {

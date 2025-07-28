@@ -1428,35 +1428,26 @@
                     });
                }
 
-               // Replace your entire pluginShowMath-Plotter function with this
                pluginShowMathPlotter(event) {
                     const existingUI = document.getElementById('math-plotter-ui');
                     if (existingUI) existingUI.remove();
 
                     const button = event.target;
                     const rect = button.getBoundingClientRect();
-
-                    // --- Create UI elements ---
                     const ui = document.createElement('div');
                     ui.id = 'math-plotter-ui';
 
+                    // --- UI Element Creation (No Changes Here) ---
                     const header = document.createElement('div');
                     header.innerHTML = `<span>Math Plotter</span>`;
-
                     const closeBtn = document.createElement('button');
                     closeBtn.textContent = '×';
-                    closeBtn.onclick = () => ui.remove();
                     header.appendChild(closeBtn);
-
                     const content = document.createElement('div');
-
-                    // Equation Input
                     content.innerHTML = `<label>Enter equation (e.g., y = x^2)</label>`;
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.placeholder = 'y = sin(x) * 50';
-
-                    // Line Thickness Slider
                     const thicknessLabel = document.createElement('label');
                     thicknessLabel.textContent = 'Line Thickness';
                     const thicknessSlider = document.createElement('input');
@@ -1465,8 +1456,6 @@
                     thicknessSlider.max = 5;
                     thicknessSlider.step = 0.5;
                     thicknessSlider.value = 1.5;
-
-                    // X-Axis Ticks Slider
                     const xTicksLabel = document.createElement('label');
                     xTicksLabel.textContent = 'X-Axis Ticks';
                     const xTicksSlider = document.createElement('input');
@@ -1475,8 +1464,6 @@
                     xTicksSlider.max = 20;
                     xTicksSlider.step = 1;
                     xTicksSlider.value = 5;
-
-                    // Y-Axis Ticks Slider
                     const yTicksLabel = document.createElement('label');
                     yTicksLabel.textContent = 'Y-Axis Ticks';
                     const yTicksSlider = document.createElement('input');
@@ -1485,17 +1472,54 @@
                     yTicksSlider.max = 20;
                     yTicksSlider.step = 1;
                     yTicksSlider.value = 5;
-
-                    // Axes Visibility Checkboxes
                     const axesContainer = document.createElement('div');
                     axesContainer.innerHTML = `
         <label><input type="checkbox" id="show-x-axis" checked> Show X-Axis</label>
         <label><input type="checkbox" id="show-y-axis" checked> Show Y-Axis</label>
     `;
-
-                    // Plot Button
                     const plotBtn = document.createElement('button');
                     plotBtn.textContent = 'Plot Equation';
+
+                    // --- NEW: Focus Trap & Click-Outside Logic ---
+
+                    const closeUI = () => {
+                         ui.remove();
+                         // IMPORTANT: Clean up the event listeners to prevent memory leaks
+                         document.removeEventListener('mousedown', handleClickOutside);
+                         document.removeEventListener('keydown', handleFocusTrap);
+                    };
+
+                    const handleClickOutside = (e) => {
+                         // Close if the click is not on the popup AND not on the button that opened it
+                         if (!ui.contains(e.target) && e.target !== button) {
+                              closeUI();
+                         }
+                    };
+
+                    const handleFocusTrap = (e) => {
+                         if (e.key !== 'Tab') return;
+
+                         const focusableElements = ui.querySelectorAll(
+                              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                         );
+                         const firstElement = focusableElements[0];
+                         const lastElement = focusableElements[focusableElements.length - 1];
+
+                         if (e.shiftKey) { // Shift + Tab
+                              if (document.activeElement === firstElement) {
+                                   lastElement.focus();
+                                   e.preventDefault();
+                              }
+                         } else { // Tab
+                              if (document.activeElement === lastElement) {
+                                   firstElement.focus();
+                                   e.preventDefault();
+                              }
+                         }
+                    };
+
+                    // --- Assign Event Handlers ---
+                    closeBtn.onclick = closeUI;
                     plotBtn.onclick = () => {
                          this.plotEquation({
                               equation: input.value,
@@ -1505,11 +1529,11 @@
                               showXAxis: document.getElementById('show-x-axis').checked,
                               showYAxis: document.getElementById('show-y-axis').checked,
                          });
-                         ui.remove();
+                         closeUI(); // Close UI after plotting
                     };
                     input.onkeydown = (e) => { if (e.key === 'Enter') plotBtn.click(); };
 
-                    // Append all elements
+                    // --- Append elements, style them, and add listeners ---
                     content.appendChild(input);
                     content.appendChild(thicknessLabel);
                     content.appendChild(thicknessSlider);
@@ -1522,34 +1546,29 @@
                     ui.appendChild(header);
                     ui.appendChild(content);
 
-                    // Apply all styles dynamically
                     Object.assign(ui.style, {
-                         position: 'absolute', visibility: 'hidden', width: '280px',
-                         backgroundColor: '#2d2d30', border: '1px solid #404040',
-                         borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002'
+                         position: 'absolute', visibility: 'hidden', width: '280px', backgroundColor: '#2d2d30',
+                         border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002'
                     });
-                    Object.assign(header.style, {
-                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px',
-                         backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600'
-                    });
+                    // (The rest of your styling code remains the same)
+                    Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600' });
                     Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
                     Object.assign(content.style, { padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' });
                     Object.assign(axesContainer.style, { display: 'flex', justifyContent: 'space-around', color: '#ccc', fontSize: '13px' });
                     Object.assign(input.style, { padding: '8px', backgroundColor: '#3e3e42', border: '1px solid #555', borderRadius: '4px', color: '#f0f0f0' });
                     Object.assign(plotBtn.style, { backgroundColor: '#0078d4', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' });
 
-                    // Add to body to calculate its height for positioning
-                    document.body.appendChild(ui);
 
-                    // Set final position and make it visible
+                    document.body.appendChild(ui);
                     ui.style.left = `${rect.left}px`;
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
                     ui.style.visibility = 'visible';
-
                     input.focus();
-               }
 
-               // Replace your entire plotEquation function with this
+                    // Add the global listeners
+                    document.addEventListener('mousedown', handleClickOutside);
+                    document.addEventListener('keydown', handleFocusTrap);
+               }
 
                // Replace your entire plotEquation function with this
                async plotEquation(options) {
@@ -1610,49 +1629,81 @@
                     }
                }
 
-               /**
-                * Creates and displays the Markdown renderer UI dynamically.
-                */
-               // Replace your existing pluginShowMarkdownRenderer function
                pluginShowMarkdownRenderer(event) {
                     const existingUI = document.getElementById('markdown-renderer-ui');
                     if (existingUI) existingUI.remove();
 
                     const button = event.target;
                     const rect = button.getBoundingClientRect();
-
-                    // --- The Markdown content to pre-fill ---
                     const markdownContent = '';
-
-                    // --- Create UI elements ---
                     const ui = document.createElement('div');
                     ui.id = 'markdown-renderer-ui';
 
+                    // --- UI Element Creation (No Changes Here) ---
                     const header = document.createElement('div');
                     header.innerHTML = `<span>Markdown Renderer</span>`;
-
                     const closeBtn = document.createElement('button');
                     closeBtn.textContent = '×';
-                    closeBtn.onclick = () => ui.remove();
                     header.appendChild(closeBtn);
-
                     const content = document.createElement('div');
                     const textarea = document.createElement('textarea');
-                    textarea.value = markdownContent; // Pre-fill the content
-
+                    textarea.value = markdownContent;
                     const renderBtn = document.createElement('button');
                     renderBtn.textContent = 'Render Markdown';
-                    renderBtn.onclick = () => {
-                         this.renderMarkdown(textarea.value);
+
+                    // --- NEW: Focus Trap & Click-Outside Logic ---
+
+                    const closeUI = () => {
                          ui.remove();
+                         // IMPORTANT: Clean up the event listeners
+                         document.removeEventListener('mousedown', handleClickOutside);
+                         document.removeEventListener('keydown', handleFocusTrap);
                     };
 
+                    const handleClickOutside = (e) => {
+                         if (!ui.contains(e.target) && e.target !== button) {
+                              closeUI();
+                         }
+                    };
+
+                    const handleFocusTrap = (e) => {
+                         if (e.key !== 'Tab') return;
+
+                         const focusableElements = ui.querySelectorAll(
+                              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                         );
+                         const firstElement = focusableElements[0];
+                         const lastElement = focusableElements[focusableElements.length - 1];
+
+                         // Note: The textarea is the only focusable element besides buttons here.
+                         // For more complex popups, this logic is essential.
+                         if (e.shiftKey) {
+                              if (document.activeElement === firstElement) {
+                                   lastElement.focus();
+                                   e.preventDefault();
+                              }
+                         } else {
+                              if (document.activeElement === lastElement) {
+                                   firstElement.focus();
+                                   e.preventDefault();
+                              }
+                         }
+                    };
+
+                    // --- Assign Event Handlers ---
+                    closeBtn.onclick = closeUI;
+                    renderBtn.onclick = () => {
+                         this.renderMarkdown(textarea.value);
+                         closeUI(); // Close UI after rendering
+                    };
+
+                    // --- Append elements, style them, and add listeners ---
                     content.appendChild(textarea);
                     content.appendChild(renderBtn);
                     ui.appendChild(header);
                     ui.appendChild(content);
 
-                    // --- Styles and Positioning (no changes here) ---
+                    // (Styling code remains the same)
                     Object.assign(ui.style, { position: 'absolute', visibility: 'hidden', width: '400px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
                     Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600' });
                     Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
@@ -1665,153 +1716,159 @@
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
                     ui.style.visibility = 'visible';
                     textarea.focus();
+
+                    // Add the global listeners
+                    document.addEventListener('mousedown', handleClickOutside);
+                    document.addEventListener('keydown', handleFocusTrap);
                }
 
 
-               // Replace your entire renderMarkdown function with this
-               // Replace your entire renderMarkdown function with this
                async renderMarkdown(markdownText) {
                     if (!this.excalidrawAPI || !markdownText.trim()) return;
 
+                    // --- 1. Initial Setup ---
                     const appState = this.excalidrawAPI.getAppState();
-                    const FONT_FAMILY = appState.currentItemFontFamily;
+                    const existingElements = this.excalidrawAPI.getSceneElements();
+
+                    const FONT_FAMILY = parseInt(document.getElementById('fontFamilySelect')?.value || 4);
+                    const STROKE_COLOR = document.querySelector('.color-swatch.active')?.dataset.color || '#000000';
                     const SIZES = {
-                         H1: parseInt(document.querySelector('.size-btn[value="58"]').value),
-                         H2: parseInt(document.querySelector('.size-btn[value="48"]').value),
-                         H3: parseInt(document.querySelector('.size-btn[value="38"]').value),
-                         N: parseInt(document.querySelector('.size-btn.active').value)
+                         H1: 58, H2: 48, H3: 38,
+                         N: parseInt(document.querySelector('.size-btn.active')?.value || '28')
                     };
 
-                    const headerBgColor = '#333333';
-                    const headerFontColor = '#ffffff';
-
-                    const elementSkeletons = [];
-                    let currentY = 0;
                     const PADDING = 15;
                     const LINE_HEIGHT = 1.25;
+                    const INDENT_WIDTH = 35;
 
-                    const tokens = marked.lexer(markdownText);
+                    let elements = [];
+                    let currentY = 0;
 
-                    tokens.forEach(token => {
-                         let skeleton = null;
-                         switch (token.type) {
-                              case 'heading':
-                                   skeleton = {
-                                        type: 'text', text: token.text, y: currentY,
-                                        fontSize: SIZES[`H${token.depth}`] || SIZES.N,
-                                        fontFamily: FONT_FAMILY
-                                   };
-                                   currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
-                                   break;
-                              case 'paragraph':
-                                   skeleton = {
-                                        type: 'text', text: token.text, y: currentY,
-                                        fontSize: SIZES.N, fontFamily: FONT_FAMILY
-                                   };
-                                   currentY += SIZES.N * LINE_HEIGHT * token.text.split('\n').length + PADDING;
-                                   break;
-                              case 'list':
-                                   token.items.forEach(item => {
-                                        elementSkeletons.push({
-                                             type: 'text', text: `• ${item.text}`, y: currentY, x: 20,
-                                             fontSize: SIZES.N, fontFamily: FONT_FAMILY
+                    // --- 2. Helper to reconstruct inline text (bold, italics, etc.) ---
+                    const reconstructInline = (tokens) => tokens ? tokens.map(t => t.raw).join('') : '';
+
+                    // --- 3. The main recursive rendering function ---
+                    const processTokens = (tokens, listLevel = 0) => {
+                         const currentIndent = listLevel * INDENT_WIDTH;
+
+                         tokens.forEach(token => {
+                              switch (token.type) {
+                                   case 'space':
+                                        currentY += PADDING / 2;
+                                        break;
+
+                                   case 'heading':
+                                        elements.push({
+                                             type: 'text', text: token.text,
+                                             x: currentIndent, y: currentY,
+                                             fontSize: SIZES[`H${token.depth}`] || SIZES.N,
+                                             fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
                                         });
-                                        currentY += SIZES.N * LINE_HEIGHT;
-                                   });
-                                   currentY += PADDING;
-                                   break;
+                                        currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
+                                        break;
 
-                              // --- UPDATED CODE BLOCK LOGIC ---
-                              // This is the updated 'code' block for your renderMarkdown function
-                              case 'code':
-                                   const codeText = token.text;
-                                   const lineCount = codeText.split('\n').length;
-                                   const FONT_SIZE = 20; // Increased font size
-                                   const CHAR_WIDTH = FONT_SIZE * 0.6;
-                                   const maxWidth = Math.max(...codeText.split('\n').map(line => line.length));
-
-                                   const containerWidth = maxWidth * CHAR_WIDTH + PADDING * 2;
-                                   const containerHeight = lineCount * FONT_SIZE * LINE_HEIGHT + PADDING * 2;
-
-                                   skeleton = {
-                                        type: 'rectangle',
-                                        y: currentY,
-                                        width: containerWidth,
-                                        height: containerHeight,
-                                        backgroundColor: '#252526',
-                                        strokeColor: '#555',
-                                        roundness: { type: 2 },
-                                        label: {
-                                             text: codeText,
-                                             fontSize: FONT_SIZE, // Use the new font size
-                                             fontFamily: 3,
-                                             textAlign: 'left',
-                                             verticalAlign: 'top',
-                                             strokeColor: '#d4d4d4' // Added light gray color for contrast
-                                        }
-                                   };
-                                   currentY += containerHeight + PADDING;
-                                   break;
-
-                              case 'table':
-                                   const colWidths = new Array(token.header.length).fill(0);
-                                   const allRows = [token.header, ...token.rows];
-
-                                   allRows.forEach(row => {
-                                        row.forEach((cell, i) => {
-                                             const cellWidth = cell.text.length * (SIZES.N * 0.6);
-                                             if (cellWidth > colWidths[i]) colWidths[i] = cellWidth;
+                                   case 'paragraph':
+                                        const pText = reconstructInline(token.tokens);
+                                        elements.push({
+                                             type: 'text', text: pText,
+                                             x: currentIndent, y: currentY,
+                                             fontSize: SIZES.N, fontFamily: FONT_FAMILY,
+                                             strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
                                         });
-                                   });
+                                        currentY += SIZES.N * LINE_HEIGHT * pText.split('\n').length + PADDING;
+                                        break;
 
-                                   allRows.forEach((row, rowIndex) => {
-                                        let currentX = 0;
-                                        row.forEach((cell, colIndex) => {
-                                             const cellWidth = colWidths[colIndex] + PADDING * 2;
-                                             const cellHeight = (cell.text.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
+                                   // FIX: THIS NEW 'text' CASE IS THE SOLUTION
+                                   case 'text':
+                                        // This handles the content inside list items, which is parsed as a 'text' token.
+                                        const inlineText = reconstructInline(token.tokens);
+                                        elements.push({
+                                             type: 'text', text: inlineText,
+                                             x: currentIndent, y: currentY,
+                                             fontSize: SIZES.N, fontFamily: FONT_FAMILY,
+                                             strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
+                                        });
+                                        // Advance the cursor after rendering the text
+                                        currentY += SIZES.N * LINE_HEIGHT * inlineText.split('\n').length;
+                                        break;
 
-                                             elementSkeletons.push({
-                                                  type: 'rectangle', x: currentX, y: currentY,
-                                                  width: cellWidth, height: cellHeight, strokeColor: '#444',
-                                                  backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent',
-                                                  fillStyle: 'solid'
+                                   case 'list':
+                                        token.items.forEach(item => {
+                                             const bulletX = ((listLevel) * INDENT_WIDTH);
+                                             elements.push({
+                                                  type: 'text', text: '•',
+                                                  x: bulletX, y: currentY,
+                                                  fontSize: SIZES.N, fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
                                              });
-                                             elementSkeletons.push({
-                                                  type: 'text', text: cell.text,
-                                                  x: currentX + PADDING, y: currentY + (PADDING / 2),
-                                                  fontSize: SIZES.N, fontFamily: FONT_FAMILY,
-                                                  textAlign: token.align[colIndex] || 'left',
-                                                  strokeColor: rowIndex === 0 ? headerFontColor : undefined
-                                             });
-                                             currentX += cellWidth;
+
+                                             // Process the list item's content with an increased list level for indentation.
+                                             processTokens(item.tokens, listLevel + 1);
                                         });
-                                        currentY += (row[0].text.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
-                                   });
-                                   currentY += PADDING;
-                                   break;
-                              case 'space':
-                                   currentY += SIZES.N;
-                                   break;
-                         }
-                         if (skeleton) {
-                              elementSkeletons.push(skeleton);
-                         }
+                                        // Add a small gap after the entire list is processed
+                                        currentY += PADDING / 2;
+                                        break;
+
+                                   case 'table':
+                                        const headerBgColor = '#333333';
+                                        const headerFontColor = '#ffffff';
+                                        let tableRowY = currentY;
+
+                                        const colWidths = token.header.map(() => 0);
+                                        const allRows = [token.header, ...token.rows];
+
+                                        allRows.forEach(row => row.forEach((cell, i) => {
+                                             const cellText = reconstructInline(cell.tokens);
+                                             colWidths[i] = Math.max(colWidths[i], cellText.length * SIZES.N * 0.65);
+                                        }));
+
+                                        allRows.forEach((row, rowIndex) => {
+                                             let currentCellX = currentIndent;
+                                             let maxCellHeight = 0;
+
+                                             const renderedCells = row.map((cell, i) => {
+                                                  const cellText = reconstructInline(cell.tokens);
+                                                  const cellHeight = (cellText.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
+                                                  maxCellHeight = Math.max(maxCellHeight, cellHeight);
+                                                  return { text: cellText, width: colWidths[i] + PADDING * 2, align: token.align[i] || 'left' };
+                                             });
+
+                                             renderedCells.forEach(cellData => {
+                                                  elements.push({
+                                                       type: 'rectangle', x: currentCellX, y: tableRowY,
+                                                       width: cellData.width, height: maxCellHeight, strokeColor: '#444',
+                                                       backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent', fillStyle: 'solid'
+                                                  });
+                                                  elements.push({
+                                                       type: 'text', text: cellData.text,
+                                                       x: currentCellX + PADDING, y: tableRowY + PADDING / 2,
+                                                       fontSize: SIZES.N, fontFamily: FONT_FAMILY, textAlign: cellData.align,
+                                                       strokeColor: rowIndex === 0 ? headerFontColor : STROKE_COLOR
+                                                  });
+                                                  currentCellX += cellData.width;
+                                             });
+                                             tableRowY += maxCellHeight;
+                                        });
+                                        currentY = tableRowY + PADDING;
+                                        break;
+                              }
+                         });
+                    };
+
+                    // --- 4. Execution & Final Positioning ---
+                    const initialTokens = marked.lexer(markdownText);
+                    processTokens(initialTokens);
+
+                    const startX = -appState.scrollX + 50;
+                    const startY = -appState.scrollY + 50;
+                    elements.forEach(el => {
+                         el.x = (el.x || 0) + startX;
+                         el.y = (el.y || 0) + startY;
                     });
 
-                    const startX = -appState.scrollX + (appState.width / 2);
-                    const startY = -appState.scrollY + (appState.height / 2);
-
-                    elementSkeletons.forEach(sk => {
-                         sk.x = (sk.x || 0) + startX;
-                         sk.y = (sk.y || 0) + startY;
-                    });
-
-                    const existingElements = this.excalidrawAPI.getSceneElements();
-                    const newElements = ExcalidrawLib.convertToExcalidrawElements(elementSkeletons);
+                    const newElements = ExcalidrawLib.convertToExcalidrawElements(elements);
                     this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
-                    this.excalidrawAPI.scrollToContent(newElements[0]);
+                    this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
                }
-
                // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
                showMoveUI(type, notebookId, sectionId, subsectionId = null) {
                     const otherNotebooks = this.notebooks.filter(n => n.id !== notebookId);

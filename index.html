@@ -4,7 +4,7 @@
 <head>
      <meta charset="UTF-8">
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title> Dannote </title>
+     <title> ksai_note </title>
      <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css" />
      <!-- ADD THESE SCRIPT TAGS IN YOUR <head> -->
      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
@@ -648,7 +648,7 @@
      <div class="app-container">
           <div class="sidebar">
                <div class="sidebar-header">
-                    <h1>📓 Dannote </h1>
+                    <h1>📓 ksai_note </h1>
                     <!-- <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button> -->
                     <div class="header-actions" style="display: flex; gap: 10px;">
                          <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
@@ -668,7 +668,7 @@
 
                <div class="editor-container">
                     <div class="empty-state" id="emptyState">
-                         <h2>Welcome to Dannote</h2>
+                         <h2>Welcome to ksai_note</h2>
                          <p>Create or select a notebook to get started and drawings</p>
                     </div>
                     <div class="excalidraw-container hidden" id="excalidrawContainer"></div>
@@ -773,7 +773,7 @@
  * amounts of data asynchronously without blocking the main thread.
  */
           class IDBStorage {
-               constructor(dbName = 'dannote-storage', storeName = 'keyvaluepairs') {
+               constructor(dbName = 'ksai_note-storage', storeName = 'keyvaluepairs') {
                     this.storeName = storeName;
                     this.dbPromise = new Promise((resolve, reject) => {
                          const request = indexedDB.open(dbName, 1);
@@ -843,7 +843,7 @@
           }
 
 
-          class Dannote {
+          class ksai_note {
                constructor() {
                     this.currentNotebook = null;
                     this.currentSection = null;
@@ -1228,7 +1228,7 @@
                     excalidrawContainer.classList.add('hidden');
                }
 
-               // Replace the initializeExcalidraw method in the Dannote class with this completely fixed version:
+               // Replace the initializeExcalidraw method in the ksai_note class with this completely fixed version:
                // Replace your existing initializeExcalidraw function with this one.
                initializeExcalidraw(initialData = null) {
                     const container = document.getElementById('excalidrawContainer');
@@ -1342,7 +1342,7 @@
                     clickedButton.classList.add('active');
                }
 
-               // Add this function inside the Dannote class
+               // Add this function inside the ksai_note class
                renderPlugins() {
                     const container = document.getElementById('pluginToolbar');
                     if (!container) return;
@@ -1365,7 +1365,7 @@
                     });
                }
 
-               // Add this function inside the Dannote class
+               // Add this function inside the ksai_note class
                pluginThemeSwitch() {
                     if (!this.excalidrawAPI) return;
 
@@ -1963,12 +1963,12 @@
                }
 
                // ADD THIS FUNCTION: Asks user for export format
-               // In the Dannote class
+               // In the ksai_note class
                showExportOptions(notebookId) {
                     const choice = prompt(
                          "Choose an export format:\n\n" +
                          "Enter '1' to export as .html\n" +
-                         "Enter '2' to export as .dannote"
+                         "Enter '2' to export as .ksai_note"
                     );
 
                     // If the user presses "Cancel" or closes the prompt
@@ -1983,7 +1983,7 @@
                               this.exportNotebook(notebookId);
                               break;
                          case '2':
-                              // Export as .dannote file
+                              // Export as .ksai_note file
                               this.exportToBinaryBlobFile(notebookId);
                               break;
                          default:
@@ -2006,13 +2006,13 @@
                     return new Blob([jsonString], { type: "application/json" });
                }
 
-               // ADD THIS FUNCTION: Handles downloading the .dannote file
+               // ADD THIS FUNCTION: Handles downloading the .ksai_note file
                exportToBinaryBlobFile(notebookId) {
                     const blob = this.toBinaryBlob(notebookId);
                     if (!blob) return;
 
                     const notebook = this.notebooks.find(n => n.id === notebookId);
-                    const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.dannote`;
+                    const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.ksai_note`;
 
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -2024,11 +2024,11 @@
                     URL.revokeObjectURL(url);
                }
 
-               // ADD THIS FUNCTION: Opens the file picker to select a .dannote file
+               // ADD THIS FUNCTION: Opens the file picker to select a .ksai_note file
                openFilePicker() {
                     const input = document.createElement('input');
                     input.type = 'file';
-                    input.accept = '.dannote'; // Only allow .dannote files
+                    input.accept = '.ksai_note'; // Only allow .ksai_note files
                     input.onchange = event => {
                          const file = event.target.files[0];
                          if (file) {
@@ -2059,17 +2059,17 @@
                                    this.renderNotebooks();
                                    alert(`Successfully imported notebook: "${notebookData.name}"`);
                               } else {
-                                   alert("Invalid or corrupt .dannote file.");
+                                   alert("Invalid or corrupt .ksai_note file.");
                               }
                          } catch (e) {
-                              console.error("Failed to parse .dannote file:", e);
+                              console.error("Failed to parse .ksai_note file:", e);
                               alert("Failed to read or parse the selected file.");
                          }
                     };
                     reader.readAsText(file);
                }
 
-               // In the Dannote class
+               // In the ksai_note class
                exportNotebook(notebookId) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (!notebook) return;
@@ -2195,7 +2195,7 @@
 
           // Initialize app
           document.addEventListener('DOMContentLoaded', async () => {
-               app = new Dannote();
+               app = new ksai_note();
                await app.init();
                window.app = app; // Make globally accessible
           });

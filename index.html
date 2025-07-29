@@ -1629,33 +1629,84 @@
                     }
                }
 
-               pluginShowMarkdownRenderer(event) {
+               async pluginShowMarkdownRenderer(event) {
+                    // --- 1. Base Setup ---
                     const existingUI = document.getElementById('markdown-renderer-ui');
                     if (existingUI) existingUI.remove();
 
                     const button = event.target;
                     const rect = button.getBoundingClientRect();
-                    const markdownContent = '';
                     const ui = document.createElement('div');
                     ui.id = 'markdown-renderer-ui';
 
-                    // --- UI Element Creation (No Changes Here) ---
-                    const header = document.createElement('div');
-                    header.innerHTML = `<span>Markdown Renderer</span>`;
-                    const closeBtn = document.createElement('button');
-                    closeBtn.textContent = '×';
-                    header.appendChild(closeBtn);
-                    const content = document.createElement('div');
-                    const textarea = document.createElement('textarea');
-                    textarea.value = markdownContent;
-                    const renderBtn = document.createElement('button');
-                    renderBtn.textContent = 'Render Markdown';
+                    // --- 2. Create the UI with All AI Features ---
+                    ui.innerHTML = `
+        <div class="plugin-header">
+            <span>Markdown Renderer</span>
+            <button id="md-close-btn">×</button>
+        </div>
+        <div class="plugin-content">
+            <textarea id="md-textarea" placeholder="Enter your prompt for the AI here..."></textarea>
+            
+            <div class="ai-section">
+                <div class="ai-toggle">
+                    <input type="checkbox" id="md-ask-ai-check">
+                    <label for="md-ask-ai-check">🤖 Ask AI</label>
+                </div>
+                
+                <div id="ai-controls" class="hidden">
+                    <div class="model-selection" style="display: flex; align-items: center; gap: 5px;">
+                        <select id="md-model-select" style="flex-grow: 1;">
+                            <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                            <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+                        </select>
+                        <button id="md-update-key-btn" title="Update API Key">🔑</button>
+                    </div>
+                    <div class="prompt-selection">
+                        <select id="md-prompt-select"></select>
+                        <button id="md-add-prompt-btn" title="Add new prompt to list">+</button>
+                    </div>
+                    <div class="ai-toggle">
+                        <input type="checkbox" id="md-send-context-check">
+                        <label for="md-send-context-check">Send Canvas Context</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="md-render-btn">Render Markdown</button>
+        </div>
+    `;
 
-                    // --- NEW: Focus Trap & Click-Outside Logic ---
+                    // --- 3. Style UI Elements ---
+                    ui.querySelector('.plugin-header').style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #252526; border-bottom: 1px solid #404040; color: #ccc; font-weight: 600;';
+                    ui.querySelector('#md-close-btn').style.cssText = 'background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer;';
+                    ui.querySelector('.plugin-content').style.cssText = 'padding: 10px; display: flex; flex-direction: column; gap: 10px;';
+                    ui.querySelector('#md-textarea').style.cssText = 'width: 100%; height: 150px; padding: 8px; background-color: #1e1e1e; border: 1px solid #555; border-radius: 4px; color: #f0f0f0; resize: vertical; box-sizing: border-box;';
+                    ui.querySelector('.ai-section').style.cssText = 'border: 1px solid #404040; border-radius: 4px; padding: 8px;';
+                    ui.querySelector('.ai-toggle').style.cssText = 'display: flex; align-items: center; gap: 5px; color: #ccc;';
+                    ui.querySelector('#ai-controls').style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px;';
+                    ui.querySelector('.prompt-selection').style.cssText = 'display: flex; gap: 5px;';
+                    ui.querySelector('#md-prompt-select').style.cssText = 'flex-grow: 1;';
+                    ui.querySelector('#md-update-key-btn').style.cssText = 'padding: 5px 8px; background-color: #3e3e42; border: 1px solid #555; border-radius: 4px; color: #ccc; cursor: pointer;';
+                    ui.querySelector('#md-render-btn').style.cssText = 'background-color: #0078d4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;';
 
+                    document.body.appendChild(ui);
+                    Object.assign(ui.style, { position: 'absolute', width: '450px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
+
+                    // --- 4. Get References to All UI Elements ---
+                    const askAiCheck = ui.querySelector('#md-ask-ai-check');
+                    const aiControls = ui.querySelector('#ai-controls');
+                    const promptSelect = ui.querySelector('#md-prompt-select');
+                    const addPromptBtn = ui.querySelector('#md-add-prompt-btn');
+                    const updateKeyBtn = ui.querySelector('#md-update-key-btn');
+                    const renderBtn = ui.querySelector('#md-render-btn');
+                    const textarea = ui.querySelector('#md-textarea');
+                    const modelSelect = ui.querySelector('#md-model-select');
+                    const sendContextCheck = ui.querySelector('#md-send-context-check');
+
+                    // --- 5. Define UI Handlers and Logic ---
                     const closeUI = () => {
                          ui.remove();
-                         // IMPORTANT: Clean up the event listeners
                          document.removeEventListener('mousedown', handleClickOutside);
                          document.removeEventListener('keydown', handleFocusTrap);
                     };
@@ -1668,59 +1719,322 @@
 
                     const handleFocusTrap = (e) => {
                          if (e.key !== 'Tab') return;
-
-                         const focusableElements = ui.querySelectorAll(
-                              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                         );
-                         const firstElement = focusableElements[0];
-                         const lastElement = focusableElements[focusableElements.length - 1];
-
-                         // Note: The textarea is the only focusable element besides buttons here.
-                         // For more complex popups, this logic is essential.
+                         const focusable = ui.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                         const first = focusable[0];
+                         const last = focusable[focusable.length - 1];
                          if (e.shiftKey) {
-                              if (document.activeElement === firstElement) {
-                                   lastElement.focus();
+                              if (document.activeElement === first) {
+                                   last.focus();
                                    e.preventDefault();
                               }
                          } else {
-                              if (document.activeElement === lastElement) {
-                                   firstElement.focus();
+                              if (document.activeElement === last) {
+                                   first.focus();
                                    e.preventDefault();
                               }
                          }
                     };
 
-                    // --- Assign Event Handlers ---
-                    closeBtn.onclick = closeUI;
-                    renderBtn.onclick = () => {
-                         this.renderMarkdown(textarea.value);
-                         closeUI(); // Close UI after rendering
+                    ui.querySelector('#md-close-btn').onclick = closeUI;
+
+                    const loadPrompts = async () => {
+                         const prompts = await this.getPrompts();
+                         promptSelect.innerHTML = '<option value="">Combine with a saved prompt...</option>';
+                         prompts.forEach(p => {
+                              const option = document.createElement('option');
+                              option.value = p;
+                              option.textContent = p;
+                              promptSelect.appendChild(option);
+                         });
+                    };
+                    loadPrompts();
+
+                    askAiCheck.onchange = () => {
+                         aiControls.classList.toggle('hidden', !askAiCheck.checked);
+                         // Recalculate position to shift the UI upwards when it expands
+                         ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
                     };
 
-                    // --- Append elements, style them, and add listeners ---
-                    content.appendChild(textarea);
-                    content.appendChild(renderBtn);
-                    ui.appendChild(header);
-                    ui.appendChild(content);
+                    addPromptBtn.onclick = async () => {
+                         const newPrompt = prompt("Enter the new prompt text to save:");
+                         if (newPrompt && newPrompt.trim()) {
+                              const prompts = await this.getPrompts();
+                              if (!prompts.includes(newPrompt)) {
+                                   prompts.push(newPrompt);
+                                   await this.savePrompts(prompts);
+                                   loadPrompts();
+                                   alert("Prompt saved!");
+                              }
+                         }
+                    };
 
-                    // (Styling code remains the same)
-                    Object.assign(ui.style, { position: 'absolute', visibility: 'hidden', width: '400px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
-                    Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600' });
-                    Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
-                    Object.assign(content.style, { padding: '10px' });
-                    Object.assign(textarea.style, { width: '100%', height: '300px', padding: '8px', backgroundColor: '#1e1e1e', border: '1px solid #555', borderRadius: '4px', color: '#f0f0f0', resize: 'vertical' });
-                    Object.assign(renderBtn.style, { backgroundColor: '#0078d4', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600', width: '100%', marginTop: '10px' });
+                    updateKeyBtn.onclick = () => this.promptAndUpdateApiKey();
 
-                    document.body.appendChild(ui);
+                    renderBtn.onclick = async () => {
+                         renderBtn.textContent = "Processing...";
+                         renderBtn.disabled = true;
+
+                         if (askAiCheck.checked) {
+                              let apiKey = await this.getApiKey();
+                              if (!apiKey) {
+                                   apiKey = prompt("Please enter your Google Gemini API Key:");
+                                   if (apiKey) await this.saveApiKey(apiKey);
+                                   else {
+                                        alert("API Key is required.");
+                                        renderBtn.textContent = "Render Markdown";
+                                        renderBtn.disabled = false;
+                                        return;
+                                   }
+                              }
+
+                              let contextText = "";
+                              if (sendContextCheck.checked) {
+                                   contextText = this.excalidrawAPI.getSceneElements()
+                                        .filter(el => el.type === 'text' && el.text.trim())
+                                        .map(el => el.text)
+                                        .join('\n\n');
+                              }
+
+                              const selectedPrompt = promptSelect.value;
+                              const userPrompt = textarea.value;
+                              const finalPrompt = (selectedPrompt ? selectedPrompt + "\n\n" : "") + userPrompt;
+
+                              if (!finalPrompt.trim()) {
+                                   alert("Prompt cannot be empty.");
+                                   renderBtn.textContent = "Render Markdown";
+                                   renderBtn.disabled = false;
+                                   return;
+                              }
+
+                              const model = modelSelect.value;
+                              const aiResponse = await this.queryGemini(finalPrompt, model, apiKey, contextText);
+
+                              if (aiResponse) {
+                                   textarea.value = aiResponse;
+                              }
+                         }
+
+                         await this.renderMarkdown(textarea.value);
+                         renderBtn.textContent = "Render Markdown";
+                         renderBtn.disabled = false;
+                         closeUI();
+                    };
+
+                    // --- 6. Final Positioning and Event Listener Attachment ---
                     ui.style.left = `${rect.left}px`;
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
-                    ui.style.visibility = 'visible';
                     textarea.focus();
-
-                    // Add the global listeners
                     document.addEventListener('mousedown', handleClickOutside);
                     document.addEventListener('keydown', handleFocusTrap);
                }
+
+               // Method to get the API key from IndexedDB
+               async getApiKey() {
+                    return await this.storage.getItem('gemini_api_key');
+               }
+
+               // Method to save the API key to IndexedDB
+               async saveApiKey(key) {
+                    await this.storage.setItem('gemini_api_key', key);
+                    alert("API Key saved successfully!");
+               }
+
+               // Method to get saved prompts from IndexedDB
+               async getPrompts() {
+                    return JSON.parse(await this.storage.getItem('gemini_prompts') || '[]');
+               }
+
+               // Add or verify this method is in your Dannote class
+               async promptAndUpdateApiKey() {
+                    const currentKey = await this.getApiKey();
+                    const newKey = prompt("Enter your Google Gemini API Key:", currentKey || "");
+
+                    // The prompt returns `null` if the user cancels.
+                    if (newKey !== null) {
+                         await this.saveApiKey(newKey.trim());
+                    }
+               }
+
+               // Method to save prompts to IndexedDB
+               async savePrompts(prompts) {
+                    await this.storage.setItem('gemini_prompts', JSON.stringify(prompts));
+               }
+
+               // Method to call the Gemini API
+               async queryGemini(promptText, model, apiKey, contextText = "") {
+                    const fullPrompt = contextText ? `${promptText}\n\n--- CANVAS CONTEXT ---\n${contextText}` : promptText;
+                    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+                    try {
+                         const response = await fetch(API_URL, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                   contents: [{ parts: [{ text: fullPrompt }] }]
+                              })
+                         });
+
+                         if (!response.ok) {
+                              const errorData = await response.json();
+                              throw new Error(`API Error (${response.status}): ${errorData.error.message}`);
+                         }
+
+                         const data = await response.json();
+                         return data.candidates[0].content.parts[0].text;
+                    } catch (error) {
+                         console.error("Gemini API call failed:", error);
+                         alert(`AI query failed: ${error.message}`);
+                         return null;
+                    }
+               }
+
+
+               // async renderMarkdown(markdownText) {
+               //      if (!this.excalidrawAPI || !markdownText.trim()) return;
+
+               //      // --- 1. Initial Setup ---
+               //      const appState = this.excalidrawAPI.getAppState();
+               //      const existingElements = this.excalidrawAPI.getSceneElements();
+
+               //      const FONT_FAMILY = parseInt(document.getElementById('fontFamilySelect')?.value || 4);
+               //      const STROKE_COLOR = document.querySelector('.color-swatch.active')?.dataset.color || '#000000';
+               //      const SIZES = {
+               //           H1: 58, H2: 48, H3: 38,
+               //           N: parseInt(document.querySelector('.size-btn.active')?.value || '28')
+               //      };
+
+               //      const PADDING = 15;
+               //      const LINE_HEIGHT = 1.25;
+               //      const INDENT_WIDTH = 35;
+
+               //      let elements = [];
+               //      let currentY = 0;
+
+               //      // --- 2. Helper to reconstruct inline text (bold, italics, etc.) ---
+               //      const reconstructInline = (tokens) => tokens ? tokens.map(t => t.raw).join('') : '';
+
+               //      // --- 3. The main recursive rendering function ---
+               //      const processTokens = (tokens, listLevel = 0) => {
+               //           const currentIndent = listLevel * INDENT_WIDTH;
+
+               //           tokens.forEach(token => {
+               //                switch (token.type) {
+               //                     case 'space':
+               //                          currentY += PADDING / 2;
+               //                          break;
+
+               //                     case 'heading':
+               //                          elements.push({
+               //                               type: 'text', text: token.text,
+               //                               x: currentIndent, y: currentY,
+               //                               fontSize: SIZES[`H${token.depth}`] || SIZES.N,
+               //                               fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
+               //                          });
+               //                          currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
+               //                          break;
+
+               //                     case 'paragraph':
+               //                          const pText = reconstructInline(token.tokens);
+               //                          elements.push({
+               //                               type: 'text', text: pText,
+               //                               x: currentIndent, y: currentY,
+               //                               fontSize: SIZES.N, fontFamily: FONT_FAMILY,
+               //                               strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
+               //                          });
+               //                          currentY += SIZES.N * LINE_HEIGHT * pText.split('\n').length + PADDING;
+               //                          break;
+
+               //                     // FIX: THIS NEW 'text' CASE IS THE SOLUTION
+               //                     case 'text':
+               //                          // This handles the content inside list items, which is parsed as a 'text' token.
+               //                          const inlineText = reconstructInline(token.tokens);
+               //                          elements.push({
+               //                               type: 'text', text: inlineText,
+               //                               x: currentIndent, y: currentY,
+               //                               fontSize: SIZES.N, fontFamily: FONT_FAMILY,
+               //                               strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
+               //                          });
+               //                          // Advance the cursor after rendering the text
+               //                          currentY += SIZES.N * LINE_HEIGHT * inlineText.split('\n').length;
+               //                          break;
+
+               //                     case 'list':
+               //                          token.items.forEach(item => {
+               //                               const bulletX = ((listLevel) * INDENT_WIDTH);
+               //                               elements.push({
+               //                                    type: 'text', text: '•',
+               //                                    x: bulletX, y: currentY,
+               //                                    fontSize: SIZES.N, fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
+               //                               });
+
+               //                               // Process the list item's content with an increased list level for indentation.
+               //                               processTokens(item.tokens, listLevel + 1);
+               //                          });
+               //                          // Add a small gap after the entire list is processed
+               //                          currentY += PADDING / 2;
+               //                          break;
+
+               //                     case 'table':
+               //                          const headerBgColor = '#333333';
+               //                          const headerFontColor = '#ffffff';
+               //                          let tableRowY = currentY;
+
+               //                          const colWidths = token.header.map(() => 0);
+               //                          const allRows = [token.header, ...token.rows];
+
+               //                          allRows.forEach(row => row.forEach((cell, i) => {
+               //                               const cellText = reconstructInline(cell.tokens);
+               //                               colWidths[i] = Math.max(colWidths[i], cellText.length * SIZES.N * 0.65);
+               //                          }));
+
+               //                          allRows.forEach((row, rowIndex) => {
+               //                               let currentCellX = currentIndent;
+               //                               let maxCellHeight = 0;
+
+               //                               const renderedCells = row.map((cell, i) => {
+               //                                    const cellText = reconstructInline(cell.tokens);
+               //                                    const cellHeight = (cellText.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
+               //                                    maxCellHeight = Math.max(maxCellHeight, cellHeight);
+               //                                    return { text: cellText, width: colWidths[i] + PADDING * 2, align: token.align[i] || 'left' };
+               //                               });
+
+               //                               renderedCells.forEach(cellData => {
+               //                                    elements.push({
+               //                                         type: 'rectangle', x: currentCellX, y: tableRowY,
+               //                                         width: cellData.width, height: maxCellHeight, strokeColor: '#444',
+               //                                         backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent', fillStyle: 'solid'
+               //                                    });
+               //                                    elements.push({
+               //                                         type: 'text', text: cellData.text,
+               //                                         x: currentCellX + PADDING, y: tableRowY + PADDING / 2,
+               //                                         fontSize: SIZES.N, fontFamily: FONT_FAMILY, textAlign: cellData.align,
+               //                                         strokeColor: rowIndex === 0 ? headerFontColor : STROKE_COLOR
+               //                                    });
+               //                                    currentCellX += cellData.width;
+               //                               });
+               //                               tableRowY += maxCellHeight;
+               //                          });
+               //                          currentY = tableRowY + PADDING;
+               //                          break;
+               //                }
+               //           });
+               //      };
+
+               // --- 4. Execution & Final Positioning ---
+               //      const initialTokens = marked.lexer(markdownText);
+               //      processTokens(initialTokens);
+
+               //      const startX = -appState.scrollX + 50;
+               //      const startY = -appState.scrollY + 50;
+               //           elements.forEach(el => {
+               //           el.x = (el.x || 0) + startX;
+               //           el.y = (el.y || 0) + startY;
+               //      });
+
+               //      const newElements = ExcalidrawLib.convertToExcalidrawElements(elements);
+               //           this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
+               // this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
+               //      }
 
 
                async renderMarkdown(markdownText) {
@@ -1744,10 +2058,39 @@
                     let elements = [];
                     let currentY = 0;
 
-                    // --- 2. Helper to reconstruct inline text (bold, italics, etc.) ---
+                    // --- 2. NEW: Text Wrapping Logic ---
+                    const canvasWidth = appState.width;
+                    // Estimate character width to calculate max characters per line. 0.6 is a good factor for average fonts.
+                    const avgCharWidth = SIZES.N * 0.6;
+                    const maxChars = Math.floor((canvasWidth) / avgCharWidth);
+
+                    const wrapText = (text, maxChars) => {
+                         if (!text) return '';
+                         // Process each pre-existing line from the original markdown separately
+                         return text.split('\n').map(originalLine => {
+                              const words = originalLine.split(' ');
+                              if (words.length === 0) return '';
+
+                              let lines = [];
+                              let currentLine = words.shift();
+
+                              words.forEach(word => {
+                                   if ((currentLine + ' ' + word).length > maxChars) {
+                                        lines.push(currentLine);
+                                        currentLine = word;
+                                   } else {
+                                        currentLine += ' ' + word;
+                                   }
+                              });
+                              lines.push(currentLine);
+                              return lines.join('\n');
+                         }).join('\n');
+                    };
+
+                    // --- 3. Helper to reconstruct inline text ---
                     const reconstructInline = (tokens) => tokens ? tokens.map(t => t.raw).join('') : '';
 
-                    // --- 3. The main recursive rendering function ---
+                    // --- 4. The main recursive rendering function ---
                     const processTokens = (tokens, listLevel = 0) => {
                          const currentIndent = listLevel * INDENT_WIDTH;
 
@@ -1757,7 +2100,7 @@
                                         currentY += PADDING / 2;
                                         break;
 
-                                   case 'heading':
+                                   case 'heading': // Headings are not wrapped
                                         elements.push({
                                              type: 'text', text: token.text,
                                              x: currentIndent, y: currentY,
@@ -1769,27 +2112,28 @@
 
                                    case 'paragraph':
                                         const pText = reconstructInline(token.tokens);
+                                        const wrappedPText = wrapText(pText, maxChars); // Apply wrapping
                                         elements.push({
-                                             type: 'text', text: pText,
+                                             type: 'text', text: wrappedPText, // Use wrapped text
                                              x: currentIndent, y: currentY,
                                              fontSize: SIZES.N, fontFamily: FONT_FAMILY,
                                              strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
                                         });
-                                        currentY += SIZES.N * LINE_HEIGHT * pText.split('\n').length + PADDING;
+                                        // Update cursor position based on the number of new lines
+                                        currentY += SIZES.N * LINE_HEIGHT * wrappedPText.split('\n').length + PADDING;
                                         break;
 
-                                   // FIX: THIS NEW 'text' CASE IS THE SOLUTION
-                                   case 'text':
-                                        // This handles the content inside list items, which is parsed as a 'text' token.
+                                   case 'text': // This handles content inside list items
                                         const inlineText = reconstructInline(token.tokens);
+                                        const wrappedInlineText = wrapText(inlineText, maxChars); // Apply wrapping
                                         elements.push({
-                                             type: 'text', text: inlineText,
+                                             type: 'text', text: wrappedInlineText, // Use wrapped text
                                              x: currentIndent, y: currentY,
                                              fontSize: SIZES.N, fontFamily: FONT_FAMILY,
                                              strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
                                         });
-                                        // Advance the cursor after rendering the text
-                                        currentY += SIZES.N * LINE_HEIGHT * inlineText.split('\n').length;
+                                        // Update cursor position based on the number of new lines
+                                        currentY += SIZES.N * LINE_HEIGHT * wrappedInlineText.split('\n').length;
                                         break;
 
                                    case 'list':
@@ -1801,37 +2145,31 @@
                                                   fontSize: SIZES.N, fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
                                              });
 
-                                             // Process the list item's content with an increased list level for indentation.
                                              processTokens(item.tokens, listLevel + 1);
                                         });
-                                        // Add a small gap after the entire list is processed
                                         currentY += PADDING / 2;
                                         break;
 
+                                   // Other cases like 'table' and 'code' remain unchanged as they don't need wrapping
                                    case 'table':
                                         const headerBgColor = '#333333';
                                         const headerFontColor = '#ffffff';
                                         let tableRowY = currentY;
-
                                         const colWidths = token.header.map(() => 0);
                                         const allRows = [token.header, ...token.rows];
-
                                         allRows.forEach(row => row.forEach((cell, i) => {
                                              const cellText = reconstructInline(cell.tokens);
                                              colWidths[i] = Math.max(colWidths[i], cellText.length * SIZES.N * 0.65);
                                         }));
-
                                         allRows.forEach((row, rowIndex) => {
                                              let currentCellX = currentIndent;
                                              let maxCellHeight = 0;
-
                                              const renderedCells = row.map((cell, i) => {
                                                   const cellText = reconstructInline(cell.tokens);
                                                   const cellHeight = (cellText.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
                                                   maxCellHeight = Math.max(maxCellHeight, cellHeight);
                                                   return { text: cellText, width: colWidths[i] + PADDING * 2, align: token.align[i] || 'left' };
                                              });
-
                                              renderedCells.forEach(cellData => {
                                                   elements.push({
                                                        type: 'rectangle', x: currentCellX, y: tableRowY,
@@ -1854,7 +2192,7 @@
                          });
                     };
 
-                    // --- 4. Execution & Final Positioning ---
+                    // --- 5. Execution & Final Positioning ---
                     const initialTokens = marked.lexer(markdownText);
                     processTokens(initialTokens);
 
@@ -1869,6 +2207,8 @@
                     this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
                     this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
                }
+
+
                // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
                showMoveUI(type, notebookId, sectionId, subsectionId = null) {
                     const otherNotebooks = this.notebooks.filter(n => n.id !== notebookId);

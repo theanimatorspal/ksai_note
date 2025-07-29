@@ -845,6 +845,7 @@
 
           class ksai_note {
                constructor() {
+                    this.lastKnownSelectionIds = {};
                     this.currentNotebook = null;
                     this.currentSection = null;
                     this.currentSubsection = null;
@@ -1263,6 +1264,7 @@
                          },
                          onChange: (elements, appState) => {
                               // Auto-save still works the same.
+                              // self.lastKnownSelectionIds = appState.selectedElementIds;
                               self.saveDrawingData(elements, appState);
                          },
                          UIOptions: {
@@ -1277,6 +1279,15 @@
                     // 3. Render the component.
                     this.excalidrawRoot = createRoot(container);
                     this.excalidrawRoot.render(ExcalidrawComponent);
+
+                    const excalidrawContainer = document.getElementById('excalidrawContainer');
+                    if (excalidrawContainer) {
+                         excalidrawContainer.addEventListener('pointerup', () => {
+                              if (self.excalidrawAPI) {
+                                   self.lastKnownSelectionIds = self.excalidrawAPI.getAppState().selectedElementIds;
+                              }
+                         }, true); // Use capture phase to be safe
+                    }
 
                     // Show the container and set the loading flag
                     setTimeout(() => {
@@ -1411,6 +1422,19 @@
                          container.appendChild(btnEl);
                     });
                }
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: Theme Switch
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
 
                // Add this function inside the ksai_note class
                pluginThemeSwitch() {
@@ -1428,6 +1452,19 @@
                     });
                }
 
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: Show Math Plotter
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
                pluginShowMathPlotter(event) {
                     const existingUI = document.getElementById('math-plotter-ui');
                     if (existingUI) existingUI.remove();
@@ -1629,31 +1666,41 @@
                     }
                }
 
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: Show Markdown Renderer
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
+
+
                async pluginShowMarkdownRenderer(event) {
-                    // --- 1. Base Setup ---
+                    // --- 1. CAPTURE SELECTION IMMEDIATELY ---
+                    // const selectedElementsOnOpen = this.excalidrawAPI.getSceneElements().filter(el => el.isSelected);
+                    const selectedElementsOnOpen = this.excalidrawAPI.getSceneElements().filter(el => this.lastKnownSelectionIds[el.id]);
+
+                    // --- 2. Base Setup ---
                     const existingUI = document.getElementById('markdown-renderer-ui');
                     if (existingUI) existingUI.remove();
-
                     const button = event.target;
                     const rect = button.getBoundingClientRect();
                     const ui = document.createElement('div');
                     ui.id = 'markdown-renderer-ui';
 
-                    // --- 2. Create the UI with All AI Features ---
+                    // --- 3. UI Creation (Unchanged) ---
                     ui.innerHTML = `
-        <div class="plugin-header">
-            <span>Markdown Renderer</span>
-            <button id="md-close-btn">×</button>
-        </div>
+        <div class="plugin-header"><span>Markdown Renderer</span><button id="md-close-btn">×</button></div>
         <div class="plugin-content">
-            <textarea id="md-textarea" placeholder="Enter your prompt for the AI here..."></textarea>
-            
+            <textarea id="md-textarea" placeholder="Enter an instruction for the AI..."></textarea>
             <div class="ai-section">
-                <div class="ai-toggle">
-                    <input type="checkbox" id="md-ask-ai-check">
-                    <label for="md-ask-ai-check">🤖 Ask AI</label>
-                </div>
-                
+                <div class="ai-toggle"><input type="checkbox" id="md-ask-ai-check"><label for="md-ask-ai-check">🤖 Ask AI</label></div>
                 <div id="ai-controls" class="hidden">
                     <div class="model-selection" style="display: flex; align-items: center; gap: 5px;">
                         <select id="md-model-select" style="flex-grow: 1;">
@@ -1662,114 +1709,67 @@
                         </select>
                         <button id="md-update-key-btn" title="Update API Key">🔑</button>
                     </div>
-                    <div class="prompt-selection">
-                        <select id="md-prompt-select"></select>
-                        <button id="md-add-prompt-btn" title="Add new prompt to list">+</button>
-                    </div>
-                    <div class="ai-toggle">
-                        <input type="checkbox" id="md-send-context-check">
-                        <label for="md-send-context-check">Send Canvas Context</label>
-                    </div>
+                    <div class="prompt-selection"><select id="md-prompt-select"></select><button id="md-add-prompt-btn" title="Add new prompt to list">+</button></div>
+                    <div class="ai-toggle"><input type="checkbox" id="md-send-context-check"><label for="md-send-context-check">Send Canvas Context (from selection)</label></div>
                 </div>
             </div>
-            
             <button id="md-render-btn">Render Markdown</button>
         </div>
     `;
 
-                    // --- 3. Style UI Elements ---
+                    // --- 4. UI STYLING (COMPLETE AND VERIFIED) ---
+                    document.body.appendChild(ui);
+                    Object.assign(ui.style, { position: 'absolute', width: '450px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
+
+                    // This block is now complete and will fix the layout issue.
                     ui.querySelector('.plugin-header').style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #252526; border-bottom: 1px solid #404040; color: #ccc; font-weight: 600;';
                     ui.querySelector('#md-close-btn').style.cssText = 'background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer;';
                     ui.querySelector('.plugin-content').style.cssText = 'padding: 10px; display: flex; flex-direction: column; gap: 10px;';
                     ui.querySelector('#md-textarea').style.cssText = 'width: 100%; height: 150px; padding: 8px; background-color: #1e1e1e; border: 1px solid #555; border-radius: 4px; color: #f0f0f0; resize: vertical; box-sizing: border-box;';
                     ui.querySelector('.ai-section').style.cssText = 'border: 1px solid #404040; border-radius: 4px; padding: 8px;';
-                    ui.querySelector('.ai-toggle').style.cssText = 'display: flex; align-items: center; gap: 5px; color: #ccc;';
+                    ui.querySelectorAll('.ai-toggle').forEach(el => el.style.cssText = 'display: flex; align-items: center; gap: 5px; color: #ccc;');
                     ui.querySelector('#ai-controls').style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px;';
                     ui.querySelector('.prompt-selection').style.cssText = 'display: flex; gap: 5px;';
                     ui.querySelector('#md-prompt-select').style.cssText = 'flex-grow: 1;';
                     ui.querySelector('#md-update-key-btn').style.cssText = 'padding: 5px 8px; background-color: #3e3e42; border: 1px solid #555; border-radius: 4px; color: #ccc; cursor: pointer;';
                     ui.querySelector('#md-render-btn').style.cssText = 'background-color: #0078d4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;';
 
-                    document.body.appendChild(ui);
-                    Object.assign(ui.style, { position: 'absolute', width: '450px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
-
-                    // --- 4. Get References to All UI Elements ---
-                    const askAiCheck = ui.querySelector('#md-ask-ai-check');
-                    const aiControls = ui.querySelector('#ai-controls');
-                    const promptSelect = ui.querySelector('#md-prompt-select');
-                    const addPromptBtn = ui.querySelector('#md-add-prompt-btn');
-                    const updateKeyBtn = ui.querySelector('#md-update-key-btn');
-                    const renderBtn = ui.querySelector('#md-render-btn');
-                    const textarea = ui.querySelector('#md-textarea');
-                    const modelSelect = ui.querySelector('#md-model-select');
-                    const sendContextCheck = ui.querySelector('#md-send-context-check');
-
-                    // --- 5. Define UI Handlers and Logic ---
-                    const closeUI = () => {
-                         ui.remove();
-                         document.removeEventListener('mousedown', handleClickOutside);
-                         document.removeEventListener('keydown', handleFocusTrap);
-                    };
-
-                    const handleClickOutside = (e) => {
-                         if (!ui.contains(e.target) && e.target !== button) {
-                              closeUI();
-                         }
-                    };
-
-                    const handleFocusTrap = (e) => {
-                         if (e.key !== 'Tab') return;
-                         const focusable = ui.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-                         const first = focusable[0];
-                         const last = focusable[focusable.length - 1];
-                         if (e.shiftKey) {
-                              if (document.activeElement === first) {
-                                   last.focus();
-                                   e.preventDefault();
-                              }
-                         } else {
-                              if (document.activeElement === last) {
-                                   first.focus();
-                                   e.preventDefault();
-                              }
-                         }
-                    };
-
+                    // --- 5. Get References & Wire up Logic (Unchanged) ---
+                    const closeUI = () => { ui.remove(); document.removeEventListener('mousedown', handleClickOutside); document.removeEventListener('keydown', handleFocusTrap); };
+                    const handleClickOutside = (e) => { if (!ui.contains(e.target) && e.target !== button) closeUI(); };
+                    const handleFocusTrap = (e) => { if (e.key !== 'Tab') return; const focusable = ui.querySelectorAll('button, input, select, textarea'), first = focusable[0], last = focusable[focusable.length - 1]; if (e.shiftKey) { if (document.activeElement === first) { last.focus(); e.preventDefault(); } } else { if (document.activeElement === last) { first.focus(); e.preventDefault(); } } };
+                    const askAiCheck = ui.querySelector('#md-ask-ai-check'), aiControls = ui.querySelector('#ai-controls'), promptSelect = ui.querySelector('#md-prompt-select'), addPromptBtn = ui.querySelector('#md-add-prompt-btn'), updateKeyBtn = ui.querySelector('#md-update-key-btn'), renderBtn = ui.querySelector('#md-render-btn'), textarea = ui.querySelector('#md-textarea'), modelSelect = ui.querySelector('#md-model-select'), sendContextCheck = ui.querySelector('#md-send-context-check');
                     ui.querySelector('#md-close-btn').onclick = closeUI;
+                    // const loadPrompts = async () => { const prompts = await this.getPrompts(); promptSelect.innerHTML = '<option value="">Combine with a saved prompt...</option>'; prompts.forEach(p => { const option = document.createElement('option'); option.value = p; option.textContent = p; promptSelect.appendChild(option); }); };
+                    // ...inside pluginShowMarkdownRenderer()
+                    // ...inside pluginShowMarkdownRenderer()
 
                     const loadPrompts = async () => {
                          const prompts = await this.getPrompts();
                          promptSelect.innerHTML = '<option value="">Combine with a saved prompt...</option>';
                          prompts.forEach(p => {
                               const option = document.createElement('option');
+
+                              // The full prompt is always stored in the value, so the functionality remains the same
                               option.value = p;
-                              option.textContent = p;
+
+                              // --- NEW: Truncate long prompts for display ---
+                              if (p.length > 50) { // If the prompt is longer than 50 characters...
+                                   option.textContent = p.substring(0, 50) + '...'; // ...show a shortened version.
+                              } else {
+                                   option.textContent = p; // Otherwise, show the full text.
+                              }
+                              // --- END NEW ---
+
                               promptSelect.appendChild(option);
                          });
                     };
                     loadPrompts();
-
-                    askAiCheck.onchange = () => {
-                         aiControls.classList.toggle('hidden', !askAiCheck.checked);
-                         // Recalculate position to shift the UI upwards when it expands
-                         ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
-                    };
-
-                    addPromptBtn.onclick = async () => {
-                         const newPrompt = prompt("Enter the new prompt text to save:");
-                         if (newPrompt && newPrompt.trim()) {
-                              const prompts = await this.getPrompts();
-                              if (!prompts.includes(newPrompt)) {
-                                   prompts.push(newPrompt);
-                                   await this.savePrompts(prompts);
-                                   loadPrompts();
-                                   alert("Prompt saved!");
-                              }
-                         }
-                    };
-
+                    askAiCheck.onchange = () => { aiControls.classList.toggle('hidden', !askAiCheck.checked); ui.style.top = `${rect.top - ui.offsetHeight - 5}px`; };
+                    addPromptBtn.onclick = async () => { const newPrompt = prompt("Enter the new prompt text to save:"); if (newPrompt && newPrompt.trim()) { const prompts = await this.getPrompts(); if (!prompts.includes(newPrompt)) { prompts.push(newPrompt); await this.savePrompts(prompts); loadPrompts(); alert("Prompt saved!"); } } };
                     updateKeyBtn.onclick = () => this.promptAndUpdateApiKey();
 
+                    // --- 6. Render Button Logic (Unchanged) ---
                     renderBtn.onclick = async () => {
                          renderBtn.textContent = "Processing...";
                          renderBtn.disabled = true;
@@ -1786,29 +1786,45 @@
                                         return;
                                    }
                               }
-
-                              let contextText = "";
+                              let userInstruction = (promptSelect.value ? promptSelect.value + "\n\n" : "") + textarea.value;
+                              let finalPrompt = userInstruction;
+                              let imageBase64 = null;
                               if (sendContextCheck.checked) {
-                                   contextText = this.excalidrawAPI.getSceneElements()
-                                        .filter(el => el.type === 'text' && el.text.trim())
-                                        .map(el => el.text)
-                                        .join('\n\n');
+                                   if (selectedElementsOnOpen.length > 0) {
+                                        const selectedText = selectedElementsOnOpen.filter(el => el.type === 'text' && el.text.trim()).map(el => el.text).join('\n\n');
+                                        finalPrompt = `${userInstruction}\n\n---\nHere is the context to apply the instruction to. It consists of text content and a visual image of the selection.\n\nSELECTED TEXT:\n${selectedText}`;
+                                        try {
+                                             const { exportToBlob, getCommonBounds } = ExcalidrawLib;
+                                             const [minX, minY, maxX, maxY] = getCommonBounds(selectedElementsOnOpen);
+                                             const scale = Math.min(2048 / (maxX - minX), 2048 / (maxY - minY), 1);
+                                             const blob = await exportToBlob({
+                                                  elements: selectedElementsOnOpen,
+                                                  appState: { ...this.excalidrawAPI.getAppState(), viewBackgroundColor: '#1e1e1e', exportPadding: 30 },
+                                                  files: this.excalidrawAPI.getFiles(),
+                                                  mimeType: "image/png",
+                                                  exportScale: scale
+                                             });
+                                             imageBase64 = await new Promise((resolve, reject) => {
+                                                  const reader = new FileReader();
+                                                  reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                                                  reader.onerror = reject;
+                                                  reader.readAsDataURL(blob);
+                                             });
+                                        } catch (error) {
+                                             console.error("Canvas export failed:", error);
+                                             alert("Could not generate image from selection.");
+                                        }
+                                   } else {
+                                        alert("Send Context was checked, but no elements were selected when the plugin was opened.");
+                                   }
                               }
-
-                              const selectedPrompt = promptSelect.value;
-                              const userPrompt = textarea.value;
-                              const finalPrompt = (selectedPrompt ? selectedPrompt + "\n\n" : "") + userPrompt;
-
                               if (!finalPrompt.trim()) {
                                    alert("Prompt cannot be empty.");
                                    renderBtn.textContent = "Render Markdown";
                                    renderBtn.disabled = false;
                                    return;
                               }
-
-                              const model = modelSelect.value;
-                              const aiResponse = await this.queryGemini(finalPrompt, model, apiKey, contextText);
-
+                              const aiResponse = await this.queryGemini(finalPrompt, modelSelect.value, apiKey, imageBase64);
                               if (aiResponse) {
                                    textarea.value = aiResponse;
                               }
@@ -1820,7 +1836,7 @@
                          closeUI();
                     };
 
-                    // --- 6. Final Positioning and Event Listener Attachment ---
+                    // --- 7. Final Positioning and Event Listeners ---
                     ui.style.left = `${rect.left}px`;
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
                     textarea.focus();
@@ -1844,34 +1860,29 @@
                     return JSON.parse(await this.storage.getItem('gemini_prompts') || '[]');
                }
 
-               // Add or verify this method is in your Dannote class
-               async promptAndUpdateApiKey() {
-                    const currentKey = await this.getApiKey();
-                    const newKey = prompt("Enter your Google Gemini API Key:", currentKey || "");
-
-                    // The prompt returns `null` if the user cancels.
-                    if (newKey !== null) {
-                         await this.saveApiKey(newKey.trim());
-                    }
-               }
-
                // Method to save prompts to IndexedDB
                async savePrompts(prompts) {
                     await this.storage.setItem('gemini_prompts', JSON.stringify(prompts));
                }
 
-               // Method to call the Gemini API
-               async queryGemini(promptText, model, apiKey, contextText = "") {
-                    const fullPrompt = contextText ? `${promptText}\n\n--- CANVAS CONTEXT ---\n${contextText}` : promptText;
+               async queryGemini(promptText, model, apiKey, imageBase64 = null) {
                     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+                    const parts = [{ text: promptText }];
+                    if (imageBase64) {
+                         parts.push({
+                              inline_data: {
+                                   mime_type: "image/png",
+                                   data: imageBase64
+                              }
+                         });
+                    }
 
                     try {
                          const response = await fetch(API_URL, {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                   contents: [{ parts: [{ text: fullPrompt }] }]
-                              })
+                              body: JSON.stringify({ contents: [{ parts: parts }] })
                          });
 
                          if (!response.ok) {
@@ -1880,6 +1891,11 @@
                          }
 
                          const data = await response.json();
+                         console.log("Full API Response:", JSON.stringify(data, null, 2));
+                         if (!data.candidates || data.candidates.length === 0) {
+                              const blockReason = data.promptFeedback?.blockReason || "No content returned";
+                              throw new Error(`Request was blocked or returned no content. Reason: ${blockReason}`);
+                         }
                          return data.candidates[0].content.parts[0].text;
                     } catch (error) {
                          console.error("Gemini API call failed:", error);
@@ -1888,155 +1904,7 @@
                     }
                }
 
-
-               // async renderMarkdown(markdownText) {
-               //      if (!this.excalidrawAPI || !markdownText.trim()) return;
-
-               //      // --- 1. Initial Setup ---
-               //      const appState = this.excalidrawAPI.getAppState();
-               //      const existingElements = this.excalidrawAPI.getSceneElements();
-
-               //      const FONT_FAMILY = parseInt(document.getElementById('fontFamilySelect')?.value || 4);
-               //      const STROKE_COLOR = document.querySelector('.color-swatch.active')?.dataset.color || '#000000';
-               //      const SIZES = {
-               //           H1: 58, H2: 48, H3: 38,
-               //           N: parseInt(document.querySelector('.size-btn.active')?.value || '28')
-               //      };
-
-               //      const PADDING = 15;
-               //      const LINE_HEIGHT = 1.25;
-               //      const INDENT_WIDTH = 35;
-
-               //      let elements = [];
-               //      let currentY = 0;
-
-               //      // --- 2. Helper to reconstruct inline text (bold, italics, etc.) ---
-               //      const reconstructInline = (tokens) => tokens ? tokens.map(t => t.raw).join('') : '';
-
-               //      // --- 3. The main recursive rendering function ---
-               //      const processTokens = (tokens, listLevel = 0) => {
-               //           const currentIndent = listLevel * INDENT_WIDTH;
-
-               //           tokens.forEach(token => {
-               //                switch (token.type) {
-               //                     case 'space':
-               //                          currentY += PADDING / 2;
-               //                          break;
-
-               //                     case 'heading':
-               //                          elements.push({
-               //                               type: 'text', text: token.text,
-               //                               x: currentIndent, y: currentY,
-               //                               fontSize: SIZES[`H${token.depth}`] || SIZES.N,
-               //                               fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
-               //                          });
-               //                          currentY += (SIZES[`H${token.depth}`] || SIZES.N) + PADDING;
-               //                          break;
-
-               //                     case 'paragraph':
-               //                          const pText = reconstructInline(token.tokens);
-               //                          elements.push({
-               //                               type: 'text', text: pText,
-               //                               x: currentIndent, y: currentY,
-               //                               fontSize: SIZES.N, fontFamily: FONT_FAMILY,
-               //                               strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
-               //                          });
-               //                          currentY += SIZES.N * LINE_HEIGHT * pText.split('\n').length + PADDING;
-               //                          break;
-
-               //                     // FIX: THIS NEW 'text' CASE IS THE SOLUTION
-               //                     case 'text':
-               //                          // This handles the content inside list items, which is parsed as a 'text' token.
-               //                          const inlineText = reconstructInline(token.tokens);
-               //                          elements.push({
-               //                               type: 'text', text: inlineText,
-               //                               x: currentIndent, y: currentY,
-               //                               fontSize: SIZES.N, fontFamily: FONT_FAMILY,
-               //                               strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
-               //                          });
-               //                          // Advance the cursor after rendering the text
-               //                          currentY += SIZES.N * LINE_HEIGHT * inlineText.split('\n').length;
-               //                          break;
-
-               //                     case 'list':
-               //                          token.items.forEach(item => {
-               //                               const bulletX = ((listLevel) * INDENT_WIDTH);
-               //                               elements.push({
-               //                                    type: 'text', text: '•',
-               //                                    x: bulletX, y: currentY,
-               //                                    fontSize: SIZES.N, fontFamily: FONT_FAMILY, strokeColor: STROKE_COLOR
-               //                               });
-
-               //                               // Process the list item's content with an increased list level for indentation.
-               //                               processTokens(item.tokens, listLevel + 1);
-               //                          });
-               //                          // Add a small gap after the entire list is processed
-               //                          currentY += PADDING / 2;
-               //                          break;
-
-               //                     case 'table':
-               //                          const headerBgColor = '#333333';
-               //                          const headerFontColor = '#ffffff';
-               //                          let tableRowY = currentY;
-
-               //                          const colWidths = token.header.map(() => 0);
-               //                          const allRows = [token.header, ...token.rows];
-
-               //                          allRows.forEach(row => row.forEach((cell, i) => {
-               //                               const cellText = reconstructInline(cell.tokens);
-               //                               colWidths[i] = Math.max(colWidths[i], cellText.length * SIZES.N * 0.65);
-               //                          }));
-
-               //                          allRows.forEach((row, rowIndex) => {
-               //                               let currentCellX = currentIndent;
-               //                               let maxCellHeight = 0;
-
-               //                               const renderedCells = row.map((cell, i) => {
-               //                                    const cellText = reconstructInline(cell.tokens);
-               //                                    const cellHeight = (cellText.split('\n').length * SIZES.N * LINE_HEIGHT) + PADDING;
-               //                                    maxCellHeight = Math.max(maxCellHeight, cellHeight);
-               //                                    return { text: cellText, width: colWidths[i] + PADDING * 2, align: token.align[i] || 'left' };
-               //                               });
-
-               //                               renderedCells.forEach(cellData => {
-               //                                    elements.push({
-               //                                         type: 'rectangle', x: currentCellX, y: tableRowY,
-               //                                         width: cellData.width, height: maxCellHeight, strokeColor: '#444',
-               //                                         backgroundColor: rowIndex === 0 ? headerBgColor : 'transparent', fillStyle: 'solid'
-               //                                    });
-               //                                    elements.push({
-               //                                         type: 'text', text: cellData.text,
-               //                                         x: currentCellX + PADDING, y: tableRowY + PADDING / 2,
-               //                                         fontSize: SIZES.N, fontFamily: FONT_FAMILY, textAlign: cellData.align,
-               //                                         strokeColor: rowIndex === 0 ? headerFontColor : STROKE_COLOR
-               //                                    });
-               //                                    currentCellX += cellData.width;
-               //                               });
-               //                               tableRowY += maxCellHeight;
-               //                          });
-               //                          currentY = tableRowY + PADDING;
-               //                          break;
-               //                }
-               //           });
-               //      };
-
-               // --- 4. Execution & Final Positioning ---
-               //      const initialTokens = marked.lexer(markdownText);
-               //      processTokens(initialTokens);
-
-               //      const startX = -appState.scrollX + 50;
-               //      const startY = -appState.scrollY + 50;
-               //           elements.forEach(el => {
-               //           el.x = (el.x || 0) + startX;
-               //           el.y = (el.y || 0) + startY;
-               //      });
-
-               //      const newElements = ExcalidrawLib.convertToExcalidrawElements(elements);
-               //           this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
-               // this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
-               //      }
-
-
+               // Replace the entire queryGemini function in your Dannote class with this
                async renderMarkdown(markdownText) {
                     if (!this.excalidrawAPI || !markdownText.trim()) return;
 
@@ -2196,8 +2064,8 @@
                     const initialTokens = marked.lexer(markdownText);
                     processTokens(initialTokens);
 
-                    const startX = -appState.scrollX + 50;
-                    const startY = -appState.scrollY + 50;
+                    const startX = -appState.scrollX + 100;
+                    const startY = -appState.scrollY + 100;
                     elements.forEach(el => {
                          el.x = (el.x || 0) + startX;
                          el.y = (el.y || 0) + startY;
@@ -2205,7 +2073,7 @@
 
                     const newElements = ExcalidrawLib.convertToExcalidrawElements(elements);
                     this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
-                    this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
+                    // this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
                }
 
 

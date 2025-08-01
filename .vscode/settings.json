@@ -1,0 +1,154 @@
+{
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "explorer.decorations.colors": false,
+    "explorer.decorations.badges": false,
+    "window.zoomLevel": -3,
+    "editor.matchBrackets": "near",
+    "editor.fontWeight": "normal",
+    "editor.fontSize": 14,
+    "editor.tabSize": 5,
+    // PYTHON CONFIGURATION - FIXED
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "python.languageServer": "Jedi",
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.useLibraryCodeForTypes": true,
+    "python.analysis.indexing": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.typeCheckingMode": "strict",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.autoComplete.addBrackets": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.lintOnSave": true,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "error",
+        "reportMissingTypeStubs": "warning",
+        "reportUnusedImport": "warning",
+        "reportUnusedVariable": "warning",
+        "reportUndefinedVariable": "error"
+    },
+    // EDITOR CONFIGURATION - FIXED
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always",
+        "source.fixAll": "always"
+    },
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": [
+                    "keyword",
+                    "keyword.python"
+                ],
+                "settings": {
+                    "fontStyle": "underline"
+                }
+            },
+            {
+                "scope": [
+                    "entity.name.function",
+                    "entity.name.function.python",
+                    "support.function.builtin.python"
+                ],
+                "settings": {
+                    "fontStyle": "bold",
+                    "foreground": "#0f89ff"
+                }
+            },
+            {
+                "scope": [
+                    "comment.block",
+                    "comment.line",
+                    "comment.block.documentation"
+                ],
+                "settings": {
+                    "fontStyle": "bold",
+                }
+            }
+        ]
+    },
+    // EDITOR BEHAVIOR - ENHANCED
+    "editor.renderLineHighlight": "none",
+    "editor.occurrencesHighlight": "off",
+    "editor.selectionHighlight": false,
+    "editor.semanticHighlighting.enabled": true,
+    "editor.stickyScroll.enabled": false,
+    "editor.guides.indentation": false,
+    "editor.formatOnSave": true,
+    "editor.inlayHints.fontSize": 20,
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "editor.minimap.enabled": false,
+    "editor.formatOnType": true,
+    "editor.smoothScrolling": true,
+    "editor.fontVariations": true,
+    "editor.showFoldingControls": "never",
+    "editor.lineNumbers": "on",
+    "editor.foldingHighlight": true,
+    "editor.foldingImportsByDefault": false,
+    // SUGGESTIONS AND COMPLETIONS - ENHANCED
+    "editor.wordBasedSuggestions": "allDocuments",
+    "editor.quickSuggestions": {
+        "other": "on",
+        "comments": "on",
+        "strings": "on"
+    },
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.suggestSelection": "recentlyUsedByPrefix",
+    "editor.tabCompletion": "on",
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggest.showWords": true,
+    "editor.suggest.insertMode": "replace",
+    "editor.acceptSuggestionOnCommitCharacter": true,
+    "editor.acceptSuggestionOnEnter": "on",
+    // LANGUAGE-SPECIFIC SETTINGS
+    "[python]": {
+        "editor.wordBasedSuggestions": "allDocuments",
+        "editor.semanticHighlighting.enabled": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always",
+            "source.fixAll": "always"
+        },
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "[cpp]": {
+        "editor.wordBasedSuggestions": "allDocuments",
+        "editor.suggest.insertMode": "replace",
+        "editor.semanticHighlighting.enabled": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true
+    },
+    "[lua]": {
+        "editor.quickSuggestions": {
+            "comments": "inline",
+            "other": "on",
+            "strings": "on"
+        },
+        "editor.semanticHighlighting.enabled": true
+    },
+    // WORKBENCH SETTINGS
+    "workbench.editor.showTabs": "none",
+    "workbench.sideBar.location": "left",
+    "workbench.activityBar.location": "bottom",
+    "workbench.layoutControl.enabled": false,
+    "workbench.panel.defaultLocation": "right",
+    "breadcrumbs.enabled": true,
+    // FILE MANAGEMENT
+    "files.autoSave": "off",
+    "explorer.confirmDelete": false,
+    // EXTENSION-SPECIFIC SETTINGS
+    "cmake.showOptionsMovedNotification": false,
+    "cmake.showConfigureWithDebuggerNotification": false,
+    "C_Cpp.intelliSenseEngine": "default",
+    "notebook.output.fontSize": 10,
+    "Lua.format.defaultConfig": {
+        "indent_style": "space",
+        "indent_size": "10"
+    },
+    "Lua.diagnostics.globals": [
+        "StateId"
+    ]
+}

@@ -38,22 +38,6 @@ It's the love child of a digital whiteboard and a nested notebook, designed for 
 
 ---
 
-## 🖼️ Screenshot Gallery
-
-*(Add your own screenshots here!)*
-
-### Main Interface (Dark Mode is not optional, it's a feature)
-
-<img src="https://user-images.githubusercontent.com/username/repo/assets/placeholder1.png" width="100%" alt="A screenshot of the main UI showing the sidebar with nested notebooks and the Excalidraw canvas.">
-
----
-
-### Plugins in Action (Math Plotter & Markdown Renderer)
-
-<img src="https://user-images.githubusercontent.com/username/repo/assets/placeholder2.png" width="100%" alt="A screenshot showing a math plot and a rendered Markdown table on the canvas.">
-
----
-
 ## 🚀 How to Use
 
 This is the best part. There is **no build process**.

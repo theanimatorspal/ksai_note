@@ -10,6 +10,7 @@
      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
      <script>
           window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
      </script>
@@ -46,7 +47,7 @@
                background-color: #2d2d30;
                color: white;
                overflow-y: auto;
-               border-right: 1px solid #404040;
+               border-left: 1px solid #404040;
           }
 
           .sidebar-header {
@@ -182,18 +183,17 @@
                position: relative;
           }
 
-          /* Add these styles */
           .sidebar.collapsed {
                width: 0;
                padding: 0;
-               border-right: none;
+               border-left: none;
                overflow: hidden;
           }
 
           .hamburger-btn {
                position: absolute;
                top: 20px;
-               left: 70px;
+               right: 20px;
                z-index: 1001;
                display: flex;
                flex-direction: column;
@@ -215,8 +215,7 @@
           }
 
           .content-header {
-               padding: 5px 20px 5px 60px;
-               padding-left: 60px;
+               padding: 5px 20px;
                background-color: #f8f9fa;
                border-bottom: 1px solid #e5e5e5;
 
@@ -224,15 +223,12 @@
                justify-content: space-between;
                align-items: center;
                background-color: #252526;
-               /* Dark background */
                border-bottom: 1px solid #404040;
-               /* Dark border */
           }
 
           .breadcrumb {
                font-size: 14px;
                color: #cccccc;
-               /* Light gray text */
                margin-bottom: 10px;
           }
 
@@ -241,7 +237,6 @@
                font-weight: 600;
                color: #333;
                color: #ffffff;
-               /* White text */
           }
 
           .header-right {
@@ -250,8 +245,6 @@
                gap: 10px;
           }
 
-          /* Add these styles to your main <style> block in the <head> */
-          /* ADD THIS NEW RULE */
           .stroke-controls {
                display: flex;
                flex-direction: column;
@@ -279,8 +272,6 @@
                color: #333;
           }
 
-          /* Add these styles to your main <style> block */
-
           .color-palette {
                display: flex;
                align-items: center;
@@ -302,16 +293,13 @@
 
           .color-swatch.active {
                border-color: #0078d4;
-               /* Highlights the selected color */
                transform: scale(1.15);
           }
 
-          /* ADD THIS NEW RULE */
           .font-tools-container {
                display: flex;
                flex-direction: column;
                gap: 8px;
-               /* This creates space between the dropdown and the buttons */
           }
 
           .control-group label,
@@ -324,12 +312,10 @@
           }
 
           #fontFamilySelect {
-               /* This removes the default browser look (the white box) */
                -webkit-appearance: none;
                -moz-appearance: none;
                appearance: none;
 
-               /* Your custom dark-mode styles */
                color: #f0f0f0;
                background-color: #3e3e42 !important;
                border: 1px solid #555;
@@ -337,21 +323,8 @@
                cursor: pointer;
                font-size: 14px;
 
-               /* Padding to give the text some space */
                padding: 5px 10px;
           }
-
-          /* select {
-               width: 100%;
-               padding: 0.75rem;
-               background-color: #333;
-               border: 1px;
-               color: #fff;
-               border-radius: 4px;
-               box-sizing: border-box;
-               font-size: 1rem;
-          } */
-
 
           .font-control {
                display: flex;
@@ -361,7 +334,6 @@
 
           .font-control label {
                font-size: 1.2rem;
-               /* Make the emoji icon a bit bigger */
           }
 
           #fontFamilySelect {
@@ -374,7 +346,6 @@
                cursor: pointer;
           }
 
-          /* ADD THESE STYLES FOR THE NEW BUTTONS */
           .font-size-controls {
                display: flex;
                align-items: center;
@@ -561,65 +532,44 @@
 
           .sidebar-header h1 {
                font-size: 16px;
-               /* Was 18px */
                margin-bottom: 15px;
           }
 
           .add-notebook-btn {
-               /* ... */
                font-size: 12px;
-               /* Was 13px */
           }
 
           .section-item {
-               /* ... */
                font-size: 12px;
-               /* Was 13px */
           }
 
           .subsection-item {
-               /* ... */
                font-size: 11px;
-               /* Was 12px */
           }
 
           .page-title {
                font-size: 20px;
-               /* Was 22px */
                font-weight: 600;
-               /* ... */
           }
-
-
-
-
-
-          /* ADD THIS CSS. DELETE ALL OLD HEADER/TOOLBAR STYLES. */
 
           .content-header {
                display: flex;
                flex-direction: row;
                align-items: center;
-               padding: 5px 20px 5px 60px;
                gap: 20px;
                background-color: #252526;
                border-bottom: 1px solid #404040;
           }
 
           #pluginToolbar {
-               flex: 1;
-               /* Allows the toolbar to grow and fill the middle space */
+               margin-left: auto;
                min-width: 0;
-               /* Prevents layout breaking */
                display: flex;
                justify-content: flex-start;
-               /* Or 'flex-start' if you want buttons aligned left */
                gap: 8px;
                overflow-x: auto;
-               /* Makes it scrollable horizontally */
           }
 
-          /* General style for buttons in the plugin toolbar */
           .tool-btn {
                background-color: #3e3e42;
                color: #ccc;
@@ -629,14 +579,12 @@
                cursor: pointer;
                font-size: 14px;
                white-space: nowrap;
-               /* Prevent button text from wrapping */
           }
 
           .tool-btn:hover {
                background-color: #555;
           }
 
-          /* Hides the scrollbar for a cleaner look */
           #pluginToolbar::-webkit-scrollbar {
                height: 0;
                background: transparent;
@@ -646,18 +594,6 @@
 
 <body>
      <div class="app-container">
-          <div class="sidebar">
-               <div class="sidebar-header">
-                    <h1>📓 ksai_note </h1>
-                    <!-- <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button> -->
-                    <div class="header-actions" style="display: flex; gap: 10px;">
-                         <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
-                         <button class="add-notebook-btn" onclick="app.openFilePicker()">Open...</button>
-                    </div>
-               </div>
-               <div class="notebook-list" id="notebookList"></div>
-          </div>
-
           <div class="main-content">
                <button class="hamburger-btn" id="hamburgerBtn" onclick="app.toggleSidebar()">
                     <span></span>
@@ -679,7 +615,6 @@
                          <div class="breadcrumb" id="breadcrumb"></div>
                          <div class="page-title" id="pageTitle"></div>
                     </div>
-                    <div id="pluginToolbar"></div>
                     <div class="header-right">
                          <div class="stroke-controls">
                               <div class="control-group">
@@ -708,11 +643,21 @@
                               </div>
                          </div>
                     </div>
+                    <div id="pluginToolbar"></div>
                </div>
+          </div>
+          <div class="sidebar" id="sidebar-id">
+               <div class="sidebar-header">
+                    <h1>📓 ksai_note </h1>
+                    <div class="header-actions" style="display: flex; gap: 10px;">
+                         <button class="add-notebook-btn" onclick="showCreateNotebookModal()">+ New Notebook</button>
+                         <button class="add-notebook-btn" onclick="app.openFilePicker()">Open...</button>
+                    </div>
+               </div>
+               <div class="notebook-list" id="notebookList"></div>
           </div>
      </div>
 
-     <!-- Modals (same as before) -->
      <div class="modal" id="createNotebookModal">
           <div class="modal-content">
                <div class="modal-header">
@@ -767,11 +712,6 @@
           import React from "react";
           import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
 
-          /**
- * A class that mimics the storage API (getItem, setItem, removeItem)
- * but uses IndexedDB for storage. This allows for storing much larger
- * amounts of data asynchronously without blocking the main thread.
- */
           class IDBStorage {
                constructor(dbName = 'ksai_note-storage', storeName = 'keyvaluepairs') {
                     this.storeName = storeName;
@@ -787,22 +727,11 @@
                          request.onerror = event => reject(event.target.error);
                     });
                }
-
-               /**
-                * Helper method to get a transaction and object store.
-                * @param {IDBTransactionMode} mode - 'readonly' or 'readwrite'.
-                * @returns {Promise<IDBObjectStore>}
-                */
                async #getStore(mode) {
                     const db = await this.dbPromise;
                     return db.transaction(this.storeName, mode).objectStore(this.storeName);
                }
 
-               /**
-                * Retrieves an item from IndexedDB. Mimics storage.getItem.
-                * @param {string} key - The key of the item to retrieve.
-                * @returns {Promise<any>} The retrieved value, or undefined if not found.
-                */
                async getItem(key) {
                     const store = await this.#getStore('readonly');
                     return new Promise((resolve, reject) => {
@@ -812,12 +741,6 @@
                     });
                }
 
-               /**
-                * Saves an item to IndexedDB. Mimics storage.setItem.
-                * @param {string} key - The key of the item to save.
-                * @param {any} value - The value to save.
-                * @returns {Promise<void>}
-                */
                async setItem(key, value) {
                     const store = await this.#getStore('readwrite');
                     return new Promise((resolve, reject) => {
@@ -827,11 +750,6 @@
                     });
                }
 
-               /**
-                * Removes an item from IndexedDB. Mimics storage.removeItem.
-                * @param {string} key - The key of the item to remove.
-                * @returns {Promise<void>}
-                */
                async removeItem(key) {
                     const store = await this.#getStore('readwrite');
                     return new Promise((resolve, reject) => {
@@ -842,7 +760,7 @@
                }
           }
 
-
+          // DONT EVER WRITE USELESS COMMENTS IN CODE, BETTER DONT WRITE COMMENTS AT ALL
           class ksai_note {
                constructor() {
                     this.lastKnownSelectionIds = {};
@@ -854,21 +772,29 @@
                     this.excalidrawAPI = null;
                     this.excalidrawRoot = null;
                     this.isLoading = false;
-                    this.saveTimeout = null; // Add this line
+                    this.saveTimeout = null;
                     this.currentTheme = 'dark';
-                    // this.init();
+                    /*
+                         === FOR EACH AND EVERY PLUGIN ===
+                         you should manage your entire state by "the one" function that you get to add to this
+                         particular class. Like you can see down, there should NOT be any other things, that is 
+                         going to be changed for a plugin, you should do entirely everything functionally, in just
+                         one function.
+                         you can use like this.pluginThemeSwitch_variableName like that to maintain state inside the
+                         function itself.
+                    */
                     this.pluginButtons = [
                          {
-                              label: '⇔', // Text on the button
-                              action: 'pluginThemeSwitch' // The EXACT name of the function to call
+                              label: '⇔',
+                              action: 'pluginThemeSwitch'
                          },
                          {
-                              label: 'plt', // The text on the button
-                              action: 'pluginShowMathPlotter' // The function that will run on click
+                              label: 'plt',
+                              action: 'pluginShowMathPlotter'
                          },
                          {
-                              label: 'Md', // The text on the button
-                              action: 'pluginShowMarkdownRenderer' // The function to call
+                              label: 'ai',
+                              action: 'pluginShowMarkAI'
                          }
                     ];
                }
@@ -881,7 +807,6 @@
 
                     this.renderNotebooks();
 
-                    // Setup event listeneres here
                     const strokeSlider = document.getElementById('strokeWidthSlider');
                     if (strokeSlider) {
                          strokeSlider.addEventListener('input', (event) => {
@@ -919,21 +844,20 @@
                     const colors = [
                          '#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00',
                          '#862e9c', '#c92a2a', '#5f3dc4', '#ffffff', '#868e96'
-                    ]; // Black, Red, Green, Blue, Orange, Purple, Crimson, Violet, White, Gray
+                    ];
                     const paletteContainer = document.getElementById('colorPalette');
                     if (!paletteContainer) return;
 
-                    paletteContainer.innerHTML = ''; // Clear existing swatches
+                    paletteContainer.innerHTML = '';
                     colors.forEach((color, index) => {
                          const swatch = document.createElement('div');
                          swatch.className = 'color-swatch';
                          if (index === 0) {
-                              swatch.classList.add('active'); // Set black as default active
+                              swatch.classList.add('active');
                          }
                          swatch.style.backgroundColor = color;
                          swatch.dataset.color = color;
 
-                         // For the white swatch, add a visible border
                          if (color === '#ffffff') {
                               swatch.style.border = '1px solid #ced4da';
                          }
@@ -1145,9 +1069,9 @@
                }
 
                selectSection(notebookId, sectionId) {
-                    if (this.isLoading) return; // ADD THIS LINE
+                    if (this.isLoading) return;
                     this.deinitializeDrawMode()
-                    this.isLoading = true;      // ADD THIS LINE
+                    this.isLoading = true;
 
                     this.saveCurrentContent();
                     this.currentNotebook = notebookId;
@@ -1164,9 +1088,9 @@
                }
 
                selectSubsection(notebookId, sectionId, subsectionId) {
-                    if (this.isLoading) return; // ADD THIS LINE
+                    if (this.isLoading) return;
                     this.deinitializeDrawMode();
-                    this.isLoading = true;      // ADD THIS LINE
+                    this.isLoading = true;
 
                     this.saveCurrentContent();
                     this.currentNotebook = notebookId;
@@ -1205,7 +1129,6 @@
                     const emptyState = document.getElementById('emptyState');
                     emptyState.style.display = 'none';
 
-                    // this.initializeDrawMode();
                     if (item.drawingData) {
                          this.initializeExcalidraw(item.drawingData);
                     } else {
@@ -1229,42 +1152,33 @@
                     excalidrawContainer.classList.add('hidden');
                }
 
-               // Replace the initializeExcalidraw method in the ksai_note class with this completely fixed version:
-               // Replace your existing initializeExcalidraw function with this one.
                initializeExcalidraw(initialData = null) {
                     const container = document.getElementById('excalidrawContainer');
                     if (this.excalidrawRoot) {
                          this.excalidrawRoot.unmount();
                     }
 
-                    // Store reference to this for use in component
                     const self = this;
 
-                    // 1. Prepare the COMPLETE initial data object upfront.
                     const fullInitialData = {
                          elements: initialData?.elements || [],
-                         files: initialData?.files || {}, // Pass files here!
+                         files: initialData?.files || {},
                          appState: {
-                              // Your default settings
                               theme: this.currentTheme,
                               zenModeEnabled: true,
                               currentItemStrokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 0.3),
                               currentItemStrokeColor: document.querySelector('.color-swatch.active')?.dataset.color || '#000000',
                               currentItemFontFamily: parseInt(document.getElementById('fontFamilySelect')?.value || 4),
                               currentItemFontSize: parseInt(document.querySelector('.size-btn.active')?.value || '28'),
-                              // Merge with saved appState, if it exists
                               ...(initialData?.appState || {})
                          }
                     };
 
-                    // 2. Create the React component, passing the full data object.
                     const ExcalidrawComponent = React.createElement(ExcalidrawLib.Excalidraw, {
                          excalidrawAPI: (api) => {
                               self.excalidrawAPI = api;
                          },
                          onChange: (elements, appState) => {
-                              // Auto-save still works the same.
-                              // self.lastKnownSelectionIds = appState.selectedElementIds;
                               self.saveDrawingData(elements, appState);
                          },
                          UIOptions: {
@@ -1272,11 +1186,9 @@
                                    changeViewBackgroundColor: false
                               }
                          },
-                         // Pass the complete data object here.
                          initialData: fullInitialData
                     });
 
-                    // 3. Render the component.
                     this.excalidrawRoot = createRoot(container);
                     this.excalidrawRoot.render(ExcalidrawComponent);
 
@@ -1286,10 +1198,9 @@
                               if (self.excalidrawAPI) {
                                    self.lastKnownSelectionIds = self.excalidrawAPI.getAppState().selectedElementIds;
                               }
-                         }, true); // Use capture phase to be safe
+                         }, true);
                     }
 
-                    // Show the container and set the loading flag
                     setTimeout(() => {
                          this.isLoading = false;
                          this.initializeDrawMode();
@@ -1356,7 +1267,6 @@
                     if (Object.keys(selectedElementIds).length > 0) {
                          const allElements = this.excalidrawAPI.getSceneElements();
                          const newElements = allElements.map(element => {
-                              // Check if element is a selected text element
                               if (selectedElementIds[element.id] && element.type === 'text') {
                                    return { ...element, fontFamily: numericFont };
                               }
@@ -1365,7 +1275,6 @@
                          this.excalidrawAPI.updateScene({ elements: newElements });
                     }
 
-                    // Update app state for the next new element
                     this.excalidrawAPI.updateScene({
                          appState: { currentItemFontFamily: numericFont }
                     });
@@ -1379,7 +1288,6 @@
                     if (Object.keys(selectedElementIds).length > 0) {
                          const allElements = this.excalidrawAPI.getSceneElements();
                          const newElements = allElements.map(element => {
-                              // Check if element is a selected text element
                               if (selectedElementIds[element.id] && element.type === 'text') {
                                    return { ...element, fontSize: size };
                               }
@@ -1388,32 +1296,26 @@
                          this.excalidrawAPI.updateScene({ elements: newElements });
                     }
 
-                    // Update app state for the next new element
                     this.excalidrawAPI.updateScene({
                          appState: { currentItemFontSize: size }
                     });
 
-                    // Update the 'active' class on the UI buttons
                     document.querySelectorAll('.size-btn').forEach(btn => {
                          btn.classList.remove('active');
                     });
                     clickedButton.classList.add('active');
                }
 
-               // Add this function inside the ksai_note class
                renderPlugins() {
                     const container = document.getElementById('pluginToolbar');
                     if (!container) return;
 
-                    // Clear any existing buttons
                     container.innerHTML = '';
 
-                    // Create a button for each entry in the pluginButtons array
                     this.pluginButtons.forEach(button => {
                          const btnEl = document.createElement('button');
                          btnEl.className = 'tool-btn';
                          btnEl.textContent = button.label;
-                         // Wire up the onclick to call the correct function by its name
                          btnEl.onclick = (e) => {
                               if (typeof this[button.action] === 'function') {
                                    this[button.action](e);
@@ -1428,6 +1330,20 @@
                =================================================================================
                =================================================================================
                =================================================================================
+               PLUGIN: PLUGIN START
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
+
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
                PLUGIN: Theme Switch
                =================================================================================
                =================================================================================
@@ -1436,15 +1352,12 @@
                =================================================================================
                */
 
-               // Add this function inside the ksai_note class
                pluginThemeSwitch() {
                     if (!this.excalidrawAPI) return;
 
-                    // 1. Toggle the theme state
                     const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
                     this.currentTheme = newTheme;
 
-                    // 2. Update the Excalidraw canvas
                     this.excalidrawAPI.updateScene({
                          appState: {
                               theme: newTheme
@@ -1517,17 +1430,13 @@
                     const plotBtn = document.createElement('button');
                     plotBtn.textContent = 'Plot Equation';
 
-                    // --- NEW: Focus Trap & Click-Outside Logic ---
-
                     const closeUI = () => {
                          ui.remove();
-                         // IMPORTANT: Clean up the event listeners to prevent memory leaks
                          document.removeEventListener('mousedown', handleClickOutside);
                          document.removeEventListener('keydown', handleFocusTrap);
                     };
 
                     const handleClickOutside = (e) => {
-                         // Close if the click is not on the popup AND not on the button that opened it
                          if (!ui.contains(e.target) && e.target !== button) {
                               closeUI();
                          }
@@ -1547,7 +1456,7 @@
                                    lastElement.focus();
                                    e.preventDefault();
                               }
-                         } else { // Tab
+                         } else {
                               if (document.activeElement === lastElement) {
                                    firstElement.focus();
                                    e.preventDefault();
@@ -1555,7 +1464,6 @@
                          }
                     };
 
-                    // --- Assign Event Handlers ---
                     closeBtn.onclick = closeUI;
                     plotBtn.onclick = () => {
                          this.plotEquation({
@@ -1566,11 +1474,10 @@
                               showXAxis: document.getElementById('show-x-axis').checked,
                               showYAxis: document.getElementById('show-y-axis').checked,
                          });
-                         closeUI(); // Close UI after plotting
+                         closeUI();
                     };
                     input.onkeydown = (e) => { if (e.key === 'Enter') plotBtn.click(); };
 
-                    // --- Append elements, style them, and add listeners ---
                     content.appendChild(input);
                     content.appendChild(thicknessLabel);
                     content.appendChild(thicknessSlider);
@@ -1584,10 +1491,9 @@
                     ui.appendChild(content);
 
                     Object.assign(ui.style, {
-                         position: 'absolute', visibility: 'hidden', width: '280px', backgroundColor: '#2d2d30',
+                         position: 'absolute', visibility: 'hidden', backgroundColor: '#2d2d30',
                          border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002'
                     });
-                    // (The rest of your styling code remains the same)
                     Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#252526', borderBottom: '1px solid #404040', color: '#ccc', fontWeight: '600' });
                     Object.assign(closeBtn.style, { background: 'none', border: 'none', color: '#ccc', fontSize: '18px', cursor: 'pointer' });
                     Object.assign(content.style, { padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' });
@@ -1597,17 +1503,21 @@
 
 
                     document.body.appendChild(ui);
-                    ui.style.left = `${rect.left}px`;
+
+                    const startElement = document.getElementById('sidebar-id');
+                    const startElementRect = startElement.getBoundingClientRect();
+
+                    ui.style.left = `${startElementRect.left - 400}px`;
+                    ui.style.width = `400px`;
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
+
                     ui.style.visibility = 'visible';
                     input.focus();
 
-                    // Add the global listeners
                     document.addEventListener('mousedown', handleClickOutside);
                     document.addEventListener('keydown', handleFocusTrap);
                }
 
-               // Replace your entire plotEquation function with this
                async plotEquation(options) {
                     const { equation: equationInput, thickness, ticks } = options;
                     if (!this.excalidrawAPI || !equationInput) return;
@@ -1634,11 +1544,7 @@
                          const svgString = new XMLSerializer().serializeToString(svg.node());
                          const dataURL = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
 
-                         // --- CORRECTED POSITIONING LOGIC ---
-                         // 1. Get the current state of the Excalidraw app
                          const appState = this.excalidrawAPI.getAppState();
-
-                         // 2. Calculate the center of the current viewport
                          const startX = -appState.scrollX + appState.width / 2;
                          const startY = -appState.scrollY + appState.height / 2;
 
@@ -1672,7 +1578,7 @@
                =================================================================================
                =================================================================================
                =================================================================================
-               PLUGIN: Show Markdown Renderer
+               PLUGIN: Show Mark AI
                =================================================================================
                =================================================================================
                =================================================================================
@@ -1681,12 +1587,8 @@
                */
 
 
-               async pluginShowMarkdownRenderer(event) {
-                    // --- 1. CAPTURE SELECTION IMMEDIATELY ---
-                    // const selectedElementsOnOpen = this.excalidrawAPI.getSceneElements().filter(el => el.isSelected);
+               async pluginShowMarkAI(event) {
                     const selectedElementsOnOpen = this.excalidrawAPI.getSceneElements().filter(el => this.lastKnownSelectionIds[el.id]);
-
-                    // --- 2. Base Setup ---
                     const existingUI = document.getElementById('markdown-renderer-ui');
                     if (existingUI) existingUI.remove();
                     const button = event.target;
@@ -1694,14 +1596,13 @@
                     const ui = document.createElement('div');
                     ui.id = 'markdown-renderer-ui';
 
-                    // --- 3. UI Creation (Unchanged) ---
                     ui.innerHTML = `
-        <div class="plugin-header"><span>Markdown Renderer</span><button id="md-close-btn">×</button></div>
+        <div class="plugin-header"><span>Mark AI</span><button id="md-close-btn">×</button></div>
         <div class="plugin-content">
             <textarea id="md-textarea" placeholder="Enter an instruction for the AI..."></textarea>
             <div class="ai-section">
-                <div class="ai-toggle"><input type="checkbox" id="md-ask-ai-check"><label for="md-ask-ai-check">🤖 Ask AI</label></div>
-                <div id="ai-controls" class="hidden">
+                <div class="ai-toggle"><input type="checkbox" id="md-ask-ai-check" checked><label for="md-ask-ai-check">🤖 Ask AI</label></div>
+                <div id="ai-controls">
                     <div class="model-selection" style="display: flex; align-items: center; gap: 5px;">
                         <select id="md-model-select" style="flex-grow: 1;">
                             <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
@@ -1710,18 +1611,16 @@
                         <button id="md-update-key-btn" title="Update API Key">🔑</button>
                     </div>
                     <div class="prompt-selection"><select id="md-prompt-select"></select><button id="md-add-prompt-btn" title="Add new prompt to list">+</button></div>
-                    <div class="ai-toggle"><input type="checkbox" id="md-send-context-check"><label for="md-send-context-check">Send Canvas Context (from selection)</label></div>
+                    <div class="ai-toggle"><input type="checkbox" id="md-send-context-check" checked><label for="md-send-context-check">Send Canvas Context (from selection)</label></div>
                 </div>
             </div>
             <button id="md-render-btn">Render Markdown</button>
         </div>
     `;
 
-                    // --- 4. UI STYLING (COMPLETE AND VERIFIED) ---
                     document.body.appendChild(ui);
                     Object.assign(ui.style, { position: 'absolute', width: '450px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002' });
 
-                    // This block is now complete and will fix the layout issue.
                     ui.querySelector('.plugin-header').style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #252526; border-bottom: 1px solid #404040; color: #ccc; font-weight: 600;';
                     ui.querySelector('#md-close-btn').style.cssText = 'background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer;';
                     ui.querySelector('.plugin-content').style.cssText = 'padding: 10px; display: flex; flex-direction: column; gap: 10px;';
@@ -1740,9 +1639,6 @@
                     const handleFocusTrap = (e) => { if (e.key !== 'Tab') return; const focusable = ui.querySelectorAll('button, input, select, textarea'), first = focusable[0], last = focusable[focusable.length - 1]; if (e.shiftKey) { if (document.activeElement === first) { last.focus(); e.preventDefault(); } } else { if (document.activeElement === last) { first.focus(); e.preventDefault(); } } };
                     const askAiCheck = ui.querySelector('#md-ask-ai-check'), aiControls = ui.querySelector('#ai-controls'), promptSelect = ui.querySelector('#md-prompt-select'), addPromptBtn = ui.querySelector('#md-add-prompt-btn'), updateKeyBtn = ui.querySelector('#md-update-key-btn'), renderBtn = ui.querySelector('#md-render-btn'), textarea = ui.querySelector('#md-textarea'), modelSelect = ui.querySelector('#md-model-select'), sendContextCheck = ui.querySelector('#md-send-context-check');
                     ui.querySelector('#md-close-btn').onclick = closeUI;
-                    // const loadPrompts = async () => { const prompts = await this.getPrompts(); promptSelect.innerHTML = '<option value="">Combine with a saved prompt...</option>'; prompts.forEach(p => { const option = document.createElement('option'); option.value = p; option.textContent = p; promptSelect.appendChild(option); }); };
-                    // ...inside pluginShowMarkdownRenderer()
-                    // ...inside pluginShowMarkdownRenderer()
 
                     const loadPrompts = async () => {
                          const prompts = await this.getPrompts();
@@ -1750,16 +1646,13 @@
                          prompts.forEach(p => {
                               const option = document.createElement('option');
 
-                              // The full prompt is always stored in the value, so the functionality remains the same
                               option.value = p;
 
-                              // --- NEW: Truncate long prompts for display ---
-                              if (p.length > 50) { // If the prompt is longer than 50 characters...
-                                   option.textContent = p.substring(0, 50) + '...'; // ...show a shortened version.
+                              if (p.length > 50) {
+                                   option.textContent = p.substring(0, 50) + '...';
                               } else {
-                                   option.textContent = p; // Otherwise, show the full text.
+                                   option.textContent = p;
                               }
-                              // --- END NEW ---
 
                               promptSelect.appendChild(option);
                          });
@@ -1769,7 +1662,6 @@
                     addPromptBtn.onclick = async () => { const newPrompt = prompt("Enter the new prompt text to save:"); if (newPrompt && newPrompt.trim()) { const prompts = await this.getPrompts(); if (!prompts.includes(newPrompt)) { prompts.push(newPrompt); await this.savePrompts(prompts); loadPrompts(); alert("Prompt saved!"); } } };
                     updateKeyBtn.onclick = () => this.promptAndUpdateApiKey();
 
-                    // --- 6. Render Button Logic (Unchanged) ---
                     renderBtn.onclick = async () => {
                          renderBtn.textContent = "Processing...";
                          renderBtn.disabled = true;
@@ -1836,31 +1728,40 @@
                          closeUI();
                     };
 
-                    // --- 7. Final Positioning and Event Listeners ---
-                    ui.style.left = `${rect.left}px`;
+                    const startElement = document.getElementById('sidebar-id');
+                    const startElementRect = startElement.getBoundingClientRect();
+                    ui.style.left = `${startElementRect.left - 400}px`;
+                    ui.style.width = `400px`;
                     ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
+
                     textarea.focus();
                     document.addEventListener('mousedown', handleClickOutside);
                     document.addEventListener('keydown', handleFocusTrap);
                }
 
-               // Method to get the API key from IndexedDB
                async getApiKey() {
                     return await this.storage.getItem('gemini_api_key');
                }
 
-               // Method to save the API key to IndexedDB
+               async promptAndUpdateApiKey() {
+                    const currentKey = await this.getApiKey() || "";
+
+                    const newKey = prompt("Please enter your Google Gemini API Key:", currentKey);
+
+                    if (newKey !== null) {
+                         await this.saveApiKey(newKey.trim());
+                    }
+               }
+
                async saveApiKey(key) {
                     await this.storage.setItem('gemini_api_key', key);
                     alert("API Key saved successfully!");
                }
 
-               // Method to get saved prompts from IndexedDB
                async getPrompts() {
                     return JSON.parse(await this.storage.getItem('gemini_prompts') || '[]');
                }
 
-               // Method to save prompts to IndexedDB
                async savePrompts(prompts) {
                     await this.storage.setItem('gemini_prompts', JSON.stringify(prompts));
                }
@@ -1904,11 +1805,9 @@
                     }
                }
 
-               // Replace the entire queryGemini function in your Dannote class with this
                async renderMarkdown(markdownText) {
                     if (!this.excalidrawAPI || !markdownText.trim()) return;
 
-                    // --- 1. Initial Setup ---
                     const appState = this.excalidrawAPI.getAppState();
                     const existingElements = this.excalidrawAPI.getSceneElements();
 
@@ -1926,15 +1825,12 @@
                     let elements = [];
                     let currentY = 0;
 
-                    // --- 2. NEW: Text Wrapping Logic ---
                     const canvasWidth = appState.width;
-                    // Estimate character width to calculate max characters per line. 0.6 is a good factor for average fonts.
                     const avgCharWidth = SIZES.N * 0.6;
                     const maxChars = Math.floor((canvasWidth) / avgCharWidth);
 
                     const wrapText = (text, maxChars) => {
                          if (!text) return '';
-                         // Process each pre-existing line from the original markdown separately
                          return text.split('\n').map(originalLine => {
                               const words = originalLine.split(' ');
                               if (words.length === 0) return '';
@@ -1955,10 +1851,8 @@
                          }).join('\n');
                     };
 
-                    // --- 3. Helper to reconstruct inline text ---
                     const reconstructInline = (tokens) => tokens ? tokens.map(t => t.raw).join('') : '';
 
-                    // --- 4. The main recursive rendering function ---
                     const processTokens = (tokens, listLevel = 0) => {
                          const currentIndent = listLevel * INDENT_WIDTH;
 
@@ -1968,7 +1862,7 @@
                                         currentY += PADDING / 2;
                                         break;
 
-                                   case 'heading': // Headings are not wrapped
+                                   case 'heading':
                                         elements.push({
                                              type: 'text', text: token.text,
                                              x: currentIndent, y: currentY,
@@ -1980,27 +1874,25 @@
 
                                    case 'paragraph':
                                         const pText = reconstructInline(token.tokens);
-                                        const wrappedPText = wrapText(pText, maxChars); // Apply wrapping
+                                        const wrappedPText = wrapText(pText, maxChars);
                                         elements.push({
-                                             type: 'text', text: wrappedPText, // Use wrapped text
+                                             type: 'text', text: wrappedPText,
                                              x: currentIndent, y: currentY,
                                              fontSize: SIZES.N, fontFamily: FONT_FAMILY,
                                              strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
                                         });
-                                        // Update cursor position based on the number of new lines
                                         currentY += SIZES.N * LINE_HEIGHT * wrappedPText.split('\n').length + PADDING;
                                         break;
 
-                                   case 'text': // This handles content inside list items
+                                   case 'text':
                                         const inlineText = reconstructInline(token.tokens);
-                                        const wrappedInlineText = wrapText(inlineText, maxChars); // Apply wrapping
+                                        const wrappedInlineText = wrapText(inlineText, maxChars);
                                         elements.push({
-                                             type: 'text', text: wrappedInlineText, // Use wrapped text
+                                             type: 'text', text: wrappedInlineText,
                                              x: currentIndent, y: currentY,
                                              fontSize: SIZES.N, fontFamily: FONT_FAMILY,
                                              strokeColor: STROKE_COLOR, lineHeight: LINE_HEIGHT
                                         });
-                                        // Update cursor position based on the number of new lines
                                         currentY += SIZES.N * LINE_HEIGHT * wrappedInlineText.split('\n').length;
                                         break;
 
@@ -2018,7 +1910,6 @@
                                         currentY += PADDING / 2;
                                         break;
 
-                                   // Other cases like 'table' and 'code' remain unchanged as they don't need wrapping
                                    case 'table':
                                         const headerBgColor = '#333333';
                                         const headerFontColor = '#ffffff';
@@ -2060,7 +1951,6 @@
                          });
                     };
 
-                    // --- 5. Execution & Final Positioning ---
                     const initialTokens = marked.lexer(markdownText);
                     processTokens(initialTokens);
 
@@ -2073,11 +1963,118 @@
 
                     const newElements = ExcalidrawLib.convertToExcalidrawElements(elements);
                     this.excalidrawAPI.updateScene({ elements: [...existingElements, ...newElements] });
-                    // this.excalidrawAPI.scrollToContent(newElements, { fitToContent: true, padding: 20 });
+               }
+
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: Transcriber Plugin
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
+               async getTranscriber(progress_callback) {
+                    if (this.transcriber === null) {
+                         const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1");
+                         this.transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+                              progress_callback,
+                         });
+                    }
+                    return this.transcriber;
                }
 
 
-               // ADD THIS FUNCTION: Shows a prompt to select the destination notebook
+               async addTextToCanvas(text) {
+                    if (!this.excalidrawAPI) return;
+
+                    const allElements = this.excalidrawAPI.getSceneElements();
+                    let lowestY = 50;
+
+                    if (allElements.length > 0) {
+                         lowestY = allElements.reduce((maxY, el) => Math.max(maxY, el.y + el.height), 0);
+                         lowestY += 40;
+                    }
+
+                    const appState = this.excalidrawAPI.getAppState();
+                    const startX = -appState.scrollX + 50;
+
+                    const textElement = {
+                         type: 'text',
+                         x: startX,
+                         y: lowestY,
+                         text: text,
+                         fontSize: 20,
+                         fontFamily: 4,
+                         textAlign: 'left',
+                         verticalAlign: 'top',
+                         strokeColor: '#cccccc'
+                    };
+
+                    const newElements = ExcalidrawLib.convertToExcalidrawElements([textElement]);
+                    this.excalidrawAPI.updateScene({
+                         elements: [...allElements, ...newElements]
+                    });
+               }
+               async transcribeAndSave(audioBlob) {
+                    if (!this.excalidrawAPI) return;
+
+                    const statusLabel = document.getElementById('whisper-status');
+
+                    try {
+                         const transcriber = await this.getTranscriber((progress) => {
+                              if (statusLabel) {
+                                   const percent = (progress.progress || 0).toFixed(2);
+                                   statusLabel.textContent = `Loading model: ${progress.file} (${percent}%)`;
+                              }
+                         });
+
+                         if (statusLabel) statusLabel.textContent = `Transcribing...`;
+
+                         const audioData = await audioBlob.arrayBuffer();
+                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                         const decodedAudio = await audioContext.decodeAudioData(audioData);
+                         const monoChannel = decodedAudio.getChannelData(0);
+
+                         const output = await transcriber(monoChannel, {
+                              chunk_length_s: 30,
+                              stride_length_s: 5,
+                         });
+
+                         const transcribedText = output.text;
+                         if (statusLabel) statusLabel.textContent = 'Recording...'; // Reset status
+
+                         if (transcribedText) {
+                              const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              const formattedText = `[${timestamp}] ${transcribedText}`;
+                              await this.addTextToCanvas(formattedText);
+                         }
+
+                    } catch (error) {
+                         console.error("Local Transcription Error:", error);
+                         if (statusLabel) statusLabel.textContent = 'Error!';
+                         alert(`Local transcription failed: ${error.message}`);
+                    }
+               }
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: PLUGINS FINISHED
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
+
+
                showMoveUI(type, notebookId, sectionId, subsectionId = null) {
                     const otherNotebooks = this.notebooks.filter(n => n.id !== notebookId);
 
@@ -2089,7 +2086,7 @@
                     const notebookList = otherNotebooks.map((n, i) => `${i + 1}: ${n.name}`).join('\n');
                     const choice = prompt(`Enter the number of the notebook to move this ${type} to:\n\n${notebookList}`);
 
-                    if (choice === null) return; // User cancelled
+                    if (choice === null) return;
 
                     const choiceIndex = parseInt(choice, 10) - 1;
                     if (isNaN(choiceIndex) || choiceIndex < 0 || choiceIndex >= otherNotebooks.length) {
@@ -2101,7 +2098,6 @@
                     this.moveItem(type, notebookId, targetNotebook.id, sectionId, subsectionId);
                }
 
-               // ADD THIS FUNCTION: Handles the actual data manipulation for the move
                async moveItem(type, sourceNotebookId, targetNotebookId, sectionId, subsectionId) {
                     const sourceNotebook = this.notebooks.find(n => n.id === sourceNotebookId);
                     const targetNotebook = this.notebooks.find(n => n.id === targetNotebookId);
@@ -2125,14 +2121,13 @@
                               const subsectionIndex = sourceSection.subsections.findIndex(sub => sub.id === subsectionId);
                               if (subsectionIndex > -1) {
                                    const subsection = sourceSection.subsections[subsectionIndex];
-                                   // Promote the subsection to a full section in the new notebook
                                    itemToMove = {
                                         id: subsection.id,
                                         name: subsection.name,
                                         textContent: subsection.textContent,
                                         drawingData: subsection.drawingData,
                                         createdAt: subsection.createdAt,
-                                        subsections: [] // It's now a top-level section
+                                        subsections: []
                                    };
                                    sourceSection.subsections.splice(subsectionIndex, 1);
                                    targetNotebook.sections.push(itemToMove);
@@ -2142,10 +2137,8 @@
                     }
 
                     if (itemToMove) {
-                         // If the moved item was being viewed, reset the editor to the empty state
                          if (itemIsActive) {
                               this.showEmptyState();
-                              // Also update header to avoid showing old info
                               document.getElementById('contentHeader').style.display = 'none';
                          }
                          await this.saveToStorage();
@@ -2174,17 +2167,14 @@
 
                     const newName = prompt(`Enter the new name for "${item.name}":`, item.name);
 
-                    // Check if the user clicked "Cancel" or entered an empty name
                     if (newName === null || newName.trim() === '') {
-                         return; // Do nothing
+                         return;
                     }
 
-                    // Update the name, save, and re-render the list
                     item.name = newName.trim();
                     await this.saveToStorage();
                     this.renderNotebooks();
 
-                    // If the currently viewed item was renamed, update the header
                     if (this.currentNotebook === notebookId && (this.currentSection === sectionId || this.currentSubsection === subsectionId)) {
                          const currentNotebook = this.notebooks.find(n => n.id === this.currentNotebook);
                          const currentSection = currentNotebook?.sections.find(s => s.id === this.currentSection);
@@ -2193,7 +2183,6 @@
                     }
                }
 
-               // Also update the saveDrawingData method to ensure proper data structure:
                async saveDrawingData(elements, appState) {
                     clearTimeout(this.saveTimeout);
 
@@ -2203,7 +2192,6 @@
 
                          const files = this.excalidrawAPI.getFiles();
 
-                         // Create a clean appState object with only serializable properties
                          const cleanAppState = {
                               viewBackgroundColor: appState.viewBackgroundColor,
                               currentItemStrokeColor: appState.currentItemStrokeColor,
@@ -2219,7 +2207,6 @@
                               zoom: appState.zoom,
                               scrollX: appState.scrollX,
                               scrollY: appState.scrollY
-                              // Explicitly exclude collaborators and other non-serializable properties
                          };
 
                          const drawingData = {
@@ -2274,8 +2261,6 @@
                     await this.saveToStorage();
                }
 
-               // ADD THIS FUNCTION: Asks user for export format
-               // In the ksai_note class
                showExportOptions(notebookId) {
                     const choice = prompt(
                          "Choose an export format:\n\n" +
@@ -2283,42 +2268,33 @@
                          "Enter '2' to export as .ksai_note"
                     );
 
-                    // If the user presses "Cancel" or closes the prompt
                     if (choice === null) {
-                         return; // Exit without doing anything
+                         return;
                     }
 
-                    // Process the user's input
                     switch (choice.trim()) {
                          case '1':
-                              // Export as HTML
                               this.exportNotebook(notebookId);
                               break;
                          case '2':
-                              // Export as .ksai_note file
                               this.exportToBinaryBlobFile(notebookId);
                               break;
                          default:
-                              // Handle any other input
                               alert("Invalid choice. Please enter '1' or '2'.");
                               break;
                     }
                }
 
-               // ADD THIS FUNCTION: Creates the binary blob from notebook data
                toBinaryBlob(notebookId) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (!notebook) {
                          console.error("Notebook not found for blob creation");
                          return null;
                     }
-                    // Convert the notebook object to a JSON string
                     const jsonString = JSON.stringify(notebook);
-                    // Create a Blob from the string. A Blob is an object that represents raw, immutable data.
                     return new Blob([jsonString], { type: "application/json" });
                }
 
-               // ADD THIS FUNCTION: Handles downloading the .ksai_note file
                exportToBinaryBlobFile(notebookId) {
                     const blob = this.toBinaryBlob(notebookId);
                     if (!blob) return;
@@ -2336,11 +2312,10 @@
                     URL.revokeObjectURL(url);
                }
 
-               // ADD THIS FUNCTION: Opens the file picker to select a .ksai_note file
                openFilePicker() {
                     const input = document.createElement('input');
                     input.type = 'file';
-                    input.accept = '.ksai_note'; // Only allow .ksai_note files
+                    input.accept = '.ksai_note';
                     input.onchange = event => {
                          const file = event.target.files[0];
                          if (file) {
@@ -2350,17 +2325,14 @@
                     input.click();
                }
 
-               // ADD THIS FUNCTION: Reads the file and imports the notebook
                importFromBinaryBlob(file) {
                     const reader = new FileReader();
                     reader.onload = event => {
                          try {
                               const notebookData = JSON.parse(event.target.result);
 
-                              // Basic validation to ensure it's a valid notebook object
                               if (notebookData && notebookData.id && notebookData.name && Array.isArray(notebookData.sections)) {
 
-                                   // Check if a notebook with the same ID already exists
                                    if (this.notebooks.some(n => n.id === notebookData.id)) {
                                         alert(`A notebook named "${notebookData.name}" (or with the same ID) already exists.`);
                                         return;
@@ -2381,12 +2353,10 @@
                     reader.readAsText(file);
                }
 
-               // In the ksai_note class
                exportNotebook(notebookId) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (!notebook) return;
 
-                    // --- NEW: Aggregate all files from the entire notebook ---
                     const allFiles = {};
                     notebook.sections.forEach(section => {
                          if (section.drawingData && section.drawingData.files) {
@@ -2401,7 +2371,6 @@
                          }
                     });
                     const allFilesJSON = JSON.stringify(allFiles);
-                    // --- END NEW ---
 
                     const templateNode = document.getElementById('export-template');
                     const templateClone = templateNode.content.cloneNode(true);
@@ -2418,7 +2387,6 @@
                     htmlTemplate = htmlTemplate.replace('__PAGE_TITLE__', pageTitle);
                     htmlTemplate = htmlTemplate.replace('\'__NOTEBOOK_DATA_JSON__\'', notebookDataJSON);
 
-                    // --- NEW: Replace the new placeholder for the aggregated files ---
                     htmlTemplate = htmlTemplate.replace('\'__ALL_FILES_JSON__\'', allFilesJSON);
 
                     const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
@@ -2459,7 +2427,6 @@
                }
           }
 
-          // Global functions
           let app;
 
           window.showCreateNotebookModal = () => app.showCreateNotebookModal();
@@ -2488,7 +2455,6 @@
           window.switchToTextMode = () => app.switchToTextMode();
           window.switchToDrawMode = () => app.switchToDrawMode();
 
-          // Handle keyboard shortcuts
           document.addEventListener('keydown', (e) => {
                if (e.key === 'Enter') {
                     if (document.getElementById('createNotebookModal').style.display === 'flex') {
@@ -2505,14 +2471,12 @@
                }
           });
 
-          // Initialize app
           document.addEventListener('DOMContentLoaded', async () => {
                app = new ksai_note();
                await app.init();
-               window.app = app; // Make globally accessible
+               window.app = app;
           });
 
-          // Save before page unload
           window.addEventListener('beforeunload', () => {
                if (app) {
                     app.saveCurrentContent();
@@ -2537,7 +2501,6 @@
                  } }
              </script>
                     <style>
-                         /* --- GENERAL STYLES --- */
                          body {
                               margin: 0;
                               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -2548,7 +2511,6 @@
                               overflow: hidden;
                          }
 
-                         /* --- SIDEBAR STYLES --- */
                          .nav-sidebar {
                               width: 150px;
                               background: #252526;

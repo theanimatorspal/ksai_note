@@ -9,6 +9,8 @@
      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
      <script>
           window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
      </script>
@@ -2633,45 +2635,45 @@
                     reader.readAsText(file);
                }
 
-               exportNotebook(notebookId) {
+               // Replace the previous exportNotebook method with this one
+               async exportNotebook(notebookId) {
                     const notebook = this.notebooks.find(n => n.id === notebookId);
                     if (!notebook) return;
 
-                    const allFiles = {};
-                    notebook.sections.forEach(section => {
-                         if (section.drawingData && section.drawingData.files) {
-                              Object.assign(allFiles, section.drawingData.files);
-                         }
-                         if (section.subsections && section.subsections.length > 0) {
-                              section.subsections.forEach(subsection => {
-                                   if (subsection.drawingData && subsection.drawingData.files) {
-                                        Object.assign(allFiles, subsection.drawingData.files);
-                                   }
-                              });
-                         }
-                    });
-                    const allFilesJSON = JSON.stringify(allFiles);
+                    this.showNotification('Packaging notebook...', 2000, 'info');
 
+                    // 1. Get the notebook data as a binary blob (reusing your existing function)
+                    const blobData = this.toBinaryBlob(notebookId);
+                    if (!blobData) return;
+
+                    // 2. Convert that blob into a Base64 string
+                    const base64Data = await new Promise((resolve, reject) => {
+                         const reader = new FileReader();
+                         reader.onload = () => resolve(reader.result.split(',')[1]); // Get only the Base64 part
+                         reader.onerror = reject;
+                         reader.readAsDataURL(blobData);
+                    });
+
+                    // 3. Get the HTML template
                     const templateNode = document.getElementById('export-template');
                     const templateClone = templateNode.content.cloneNode(true);
                     const tempDiv = document.createElement('div');
                     tempDiv.appendChild(templateClone);
                     let htmlTemplate = tempDiv.innerHTML;
 
+                    // Clean up template tags
                     htmlTemplate = htmlTemplate.replace(/<temphtml/g, '<html').replace(/<\/temphtml>/g, '</html>');
                     htmlTemplate = htmlTemplate.replace(/<temphead/g, '<head').replace(/<\/temphead>/g, '</head>');
                     htmlTemplate = htmlTemplate.replace(/<tempbody/g, '<body').replace(/<\/tempbody>/g, '</body>');
 
-                    const pageTitle = notebook.name;
-                    const notebookDataJSON = JSON.stringify(notebook);
-                    htmlTemplate = htmlTemplate.replace('__PAGE_TITLE__', pageTitle);
-                    htmlTemplate = htmlTemplate.replace('\'__NOTEBOOK_DATA_JSON__\'', notebookDataJSON);
+                    // 4. Inject the single Base64 string into the template
+                    htmlTemplate = htmlTemplate.replace('__PAGE_TITLE__', notebook.name);
+                    htmlTemplate = htmlTemplate.replace('\'__KSAI_NOTE_BASE64_DATA__\'', `'${base64Data}'`);
 
-                    htmlTemplate = htmlTemplate.replace('\'__ALL_FILES_JSON__\'', allFilesJSON);
-
+                    // 5. Create the download link for the final .html file
                     const fileName = `${notebook.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
-                    const blob = new Blob([htmlTemplate], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
+                    const finalBlob = new Blob([htmlTemplate], { type: 'text/html' });
+                    const url = URL.createObjectURL(finalBlob);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = fileName;
@@ -2939,92 +2941,112 @@
                          import React from "react";
                          import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
 
-                         const notebook = '__NOTEBOOK_DATA_JSON__'; // Notebook structure placeholder
-                         // --- NEW: This placeholder will hold all image data for the notebook ---
-                         const allFiles = '__ALL_FILES_JSON__'; // All files data placeholder
+                         // This self-executing async function will decode the data and initialize the viewer
+                         (async () => {
+                              // 1. This placeholder is replaced by the Base64 string during export
+                              const base64Data = '__KSAI_NOTE_BASE64_DATA__';
 
-                         let excalidrawAPI = null;
-                         let activeElement = null;
+                              // --- DECODING LOGIC ---
+                              // Convert the Base64 string back to a JSON object
+                              const dataUrl = `data:application/json;base64,${base64Data}`;
+                              const response = await fetch(dataUrl);
+                              const blob = await response.blob();
+                              const jsonText = await blob.text();
+                              const notebook = JSON.parse(jsonText);
+                              // --- END DECODING ---
 
-                         // --- Sidebar Toggle Functionality ---
-                         const sidebar = document.getElementById('navSidebar');
-                         const hamburgerBtn = document.getElementById('hamburger-btn');
-                         hamburgerBtn.addEventListener('click', () => {
-                              sidebar.classList.toggle('collapsed');
-                         });
+                              // Now that we have the notebook object, the rest of the code can run
+                              let excalidrawAPI = null;
+                              let activeElement = null;
 
-                         function renderNavigation() {
-                              const navContainer = document.getElementById('navSidebar');
-                              let navHtml = `<h1>📓 ${notebook.name}</h1><ul>`;
-                              notebook.sections.forEach((section, s_idx) => {
-                                   const sectionId = `page-${s_idx}`;
-                                   navHtml += `<li id="${sectionId}" onclick="window.loadPage('section', ${s_idx})">📄 ${section.name}</li>`;
-                                   if (section.subsections && section.subsections.length > 0) {
-                                        section.subsections.forEach((subsection, sub_idx) => {
-                                             const subsectionId = `page-${s_idx}-${sub_idx}`;
-                                             navHtml += `<li class="subsection" id="${subsectionId}" onclick="window.loadPage('subsection', ${s_idx}, ${sub_idx})">📋 ${subsection.name}</li>`;
-                                        });
-                                   }
+                              // Find all image files from the entire notebook once
+                              const allFiles = {};
+                              notebook.sections.forEach(s => {
+                                   if (s.drawingData?.files) Object.assign(allFiles, s.drawingData.files);
+                                   s.subsections?.forEach(sub => {
+                                        if (sub.drawingData?.files) Object.assign(allFiles, sub.drawingData.files);
+                                   });
                               });
-                              navHtml += '</ul>';
-                              navContainer.innerHTML = navHtml;
-                         }
 
-                         window.loadPage = (type, sectionIndex, subsectionIndex) => {
-                              document.getElementById('welcome-message').classList.add('hidden');
-                              document.getElementById('excalidraw-container').classList.remove('hidden');
+                              const sidebar = document.getElementById('navSidebar');
+                              const hamburgerBtn = document.getElementById('hamburger-btn');
+                              hamburgerBtn.addEventListener('click', () => {
+                                   sidebar.classList.toggle('collapsed');
+                              });
 
-                              let item;
-                              let itemId;
-                              if (type === 'section') {
-                                   item = notebook.sections[sectionIndex];
-                                   itemId = `page-${sectionIndex}`;
-                              } else {
-                                   item = notebook.sections[sectionIndex].subsections[subsectionIndex];
-                                   itemId = `page-${sectionIndex}-${subsectionIndex}`;
-                              }
-
-                              if (activeElement) {
-                                   activeElement.classList.remove('active');
-                              }
-                              activeElement = document.getElementById(itemId);
-                              if (activeElement) {
-                                   activeElement.classList.add('active');
-                              }
-
-                              const drawingData = item.drawingData || { elements: [], appState: {} };
-
-                              if (excalidrawAPI) {
-                                   const sceneToLoad = {
-                                        elements: drawingData.elements,
-                                        appState: { ...(drawingData.appState || {}), theme: 'dark' },
-                                        files: allFiles
-                                   };
-
-                                   setTimeout(() => {
-                                        excalidrawAPI.updateScene(sceneToLoad);
-
-                                        if (sceneToLoad.elements && sceneToLoad.elements.length > 0) {
-                                             excalidrawAPI.scrollToContent(sceneToLoad.elements, { fitToContent: true });
+                              function renderNavigation() {
+                                   // ... (The renderNavigation function from the template remains exactly the same) ...
+                                   const navContainer = document.getElementById('navSidebar');
+                                   let navHtml = `<h1>📓 ${notebook.name}</h1><ul>`;
+                                   notebook.sections.forEach((section, s_idx) => {
+                                        const sectionId = `page-${s_idx}`;
+                                        navHtml += `<li id="${sectionId}" onclick="window.loadPage('section', ${s_idx})">📄 ${section.name}</li>`;
+                                        if (section.subsections && section.subsections.length > 0) {
+                                             section.subsections.forEach((subsection, sub_idx) => {
+                                                  const subsectionId = `page-${s_idx}-${sub_idx}`;
+                                                  navHtml += `<li class="subsection" id="${subsectionId}" onclick="window.loadPage('subsection', ${s_idx}, ${sub_idx})">📋 ${subsection.name}</li>`;
+                                             });
                                         }
-                                   }, 100);
+                                   });
+                                   navHtml += '</ul>';
+                                   navContainer.innerHTML = navHtml;
                               }
-                         };
 
-                         const container = document.getElementById('excalidraw-container');
-                         const root = createRoot(container);
+                              window.loadPage = (type, sectionIndex, subsectionIndex) => {
+                                   // ... (The loadPage function from the template remains exactly the same) ...
+                                   document.getElementById('welcome-message').classList.add('hidden');
+                                   document.getElementById('excalidraw-container').classList.remove('hidden');
 
-                         const ExcalidrawComponent = () => React.createElement(ExcalidrawLib.Excalidraw, {
-                              excalidrawAPI: (api) => { excalidrawAPI = api; },
-                              viewModeEnabled: true,
-                              initialData: {
-                                   appState: { theme: 'dark' },
-                                   files: allFiles
-                              }
-                         });
+                                   let item;
+                                   let itemId;
+                                   if (type === 'section') {
+                                        item = notebook.sections[sectionIndex];
+                                        itemId = `page-${sectionIndex}`;
+                                   } else {
+                                        item = notebook.sections[sectionIndex].subsections[subsectionIndex];
+                                        itemId = `page-${sectionIndex}-${subsectionIndex}`;
+                                   }
 
-                         root.render(React.createElement(ExcalidrawComponent));
-                         renderNavigation();
+                                   if (activeElement) {
+                                        activeElement.classList.remove('active');
+                                   }
+                                   activeElement = document.getElementById(itemId);
+                                   if (activeElement) {
+                                        activeElement.classList.add('active');
+                                   }
+
+                                   const drawingData = item.drawingData || { elements: [], appState: {} };
+
+                                   if (excalidrawAPI) {
+                                        const sceneToLoad = {
+                                             elements: drawingData.elements,
+                                             appState: { ...(drawingData.appState || {}), theme: 'dark' },
+                                             files: allFiles
+                                        };
+
+                                        setTimeout(() => {
+                                             excalidrawAPI.updateScene(sceneToLoad);
+                                             if (sceneToLoad.elements && sceneToLoad.elements.length > 0) {
+                                                  excalidrawAPI.scrollToContent(sceneToLoad.elements, { fitToContent: true });
+                                             }
+                                        }, 100);
+                                   }
+                              };
+
+                              const container = document.getElementById('excalidraw-container');
+                              const root = createRoot(container);
+
+                              root.render(React.createElement(ExcalidrawLib.Excalidraw, {
+                                   excalidrawAPI: (api) => { excalidrawAPI = api; },
+                                   viewModeEnabled: true,
+                                   initialData: {
+                                        appState: { theme: 'dark' },
+                                        files: allFiles
+                                   }
+                              }));
+
+                              renderNavigation();
+                         })(); // Execute the async function immediately 
                     </script>
 
                </tempbody>

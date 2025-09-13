@@ -6,11 +6,9 @@
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title> ksai_note </title>
      <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css" />
-     <!-- ADD THESE SCRIPT TAGS IN YOUR <head> -->
      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
      <script>
           window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";
      </script>
@@ -781,7 +779,7 @@
                          going to be changed for a plugin, you should do entirely everything functionally, in just
                          one function.
                          you can use like this.pluginThemeSwitch_variableName like that to maintain state inside the
-                         function itself.
+                         function itself. Use function inside function for organization or lambdas as well.
                     */
                     this.pluginButtons = [
                          {
@@ -795,6 +793,14 @@
                          {
                               label: 'ai',
                               action: 'pluginShowMarkAI'
+                         },
+                         {
+                              label: '🎤',
+                              action: 'pluginWhisper'
+                         },
+                         {
+                              label: '📋',
+                              action: 'pluginCopySelectedText'
                          }
                     ];
                }
@@ -987,6 +993,73 @@
                     this.saveToStorage();
                     this.renderNotebooks();
                }
+
+               showNotification = (() => {
+                    let activeNotification = {};
+
+                    return function (message, duration = 3000, type = 'info') {
+                         if (activeNotification.element) {
+                              clearTimeout(activeNotification.outTimer);
+                              clearTimeout(activeNotification.removeTimer);
+                              activeNotification.element.remove();
+                         }
+
+                         const notification = document.createElement('div');
+                         notification.textContent = message;
+
+                         const colors = {
+                              info: '#0078d4',
+                              success: '#2f9e44',
+                              error: '#e03131'
+                         };
+
+                         Object.assign(notification.style, {
+                              position: 'fixed',
+                              left: '50%',
+                              top: '30px',
+                              transform: 'translate(-50%, -150%)',
+                              opacity: '0',
+                              padding: '12px 20px',
+                              borderRadius: '6px',
+                              backgroundColor: colors[type] || colors.info,
+                              color: 'white',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                              zIndex: '9999',
+                              transition: 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              textAlign: 'center'
+                         });
+
+                         document.body.appendChild(notification);
+
+                         setTimeout(() => {
+                              notification.style.opacity = '1';
+                              notification.style.transform = 'translate(-50%, 0)';
+                         }, 50);
+
+                         const outTimer = setTimeout(() => {
+                              notification.style.opacity = '0';
+                              notification.style.transform = 'translate(-50%, -150%)';
+
+                              const removeTimer = setTimeout(() => {
+                                   notification.remove();
+                                   if (activeNotification.element === notification) {
+                                        activeNotification = {};
+                                   }
+                              }, 100);
+
+                              activeNotification.removeTimer = removeTimer;
+                         }, duration);
+
+                         activeNotification = {
+                              element: notification,
+                              outTimer: outTimer,
+                              removeTimer: null // removeTimer is set later
+                         };
+                    };
+               })();
+
 
                renderNotebooks() {
                     const container = document.getElementById('notebookList');
@@ -1971,95 +2044,302 @@
                =================================================================================
                =================================================================================
                =================================================================================
-               PLUGIN: Transcriber Plugin
+               PLUGIN: Whisper
                =================================================================================
                =================================================================================
                =================================================================================
                =================================================================================
                =================================================================================
                */
-               async getTranscriber(progress_callback) {
-                    if (this.transcriber === null) {
-                         const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1");
-                         this.transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
-                              progress_callback,
-                         });
-                    }
-                    return this.transcriber;
-               }
 
-
-               async addTextToCanvas(text) {
-                    if (!this.excalidrawAPI) return;
-
-                    const allElements = this.excalidrawAPI.getSceneElements();
-                    let lowestY = 50;
-
-                    if (allElements.length > 0) {
-                         lowestY = allElements.reduce((maxY, el) => Math.max(maxY, el.y + el.height), 0);
-                         lowestY += 40;
+               pluginWhisper(event) {
+                    // --- 1. STATE INITIALIZATION ---
+                    // Initializes state variables on the class instance the first time the plugin is ever run.
+                    // Adheres to your "this.pluginName_variableName" rule.
+                    if (this.pluginWhisper_isRecording === undefined) {
+                         this.pluginWhisper_isRecording = false;
+                         this.pluginWhisper_ui = null;
+                         this.pluginWhisper_transcriber = null;
+                         this.pluginWhisper_stream = null;
+                         this.pluginWhisper_mediaRecorder = null;
+                         this.pluginWhisper_recorderTimeout = null;
                     }
 
-                    const appState = this.excalidrawAPI.getAppState();
-                    const startX = -appState.scrollX + 50;
+                    if (this.pluginWhisper_ui) {
+                         return;
+                    }
 
-                    const textElement = {
-                         type: 'text',
-                         x: startX,
-                         y: lowestY,
-                         text: text,
-                         fontSize: 20,
-                         fontFamily: 4,
-                         textAlign: 'left',
-                         verticalAlign: 'top',
-                         strokeColor: '#cccccc'
+                    if (!this.currentEditingId) {
+                         alert("Please select a page before starting transcription.");
+                         return;
+                    }
+
+                    // --- 3. UI CREATION & POSITIONING ---
+                    const ui = document.createElement('div');
+                    this.pluginWhisper_ui = ui;
+                    ui.id = 'whisper-plugin-ui';
+                    ui.innerHTML = `
+        <div class="plugin-header"><span>🎤 Local Transcription</span><button id="whisper-close-btn">×</button></div>
+        <div class="plugin-content">
+            <p style="margin:0; font-size:13px;">Status: <span id="whisper-status">Idle</span></p>
+            <textarea id="whisper-transcript-view" readonly placeholder="Live transcript will appear here..."></textarea>
+            <div style="display:flex; gap:8px;">
+                <button id="whisper-record-btn" class="tool-btn" style="flex:1; background-color:#2f9e44;">Start</button>
+                <button id="whisper-to-canvas-btn" class="tool-btn" style="flex:1;">Add to Canvas</button>
+            </div>
+        </div>`;
+                    Object.assign(ui.style, { position: 'absolute', width: '300px', backgroundColor: '#2d2d30', border: '1px solid #404040', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: '1002', visibility: 'hidden' });
+                    ui.querySelector('.plugin-header').style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background-color:#252526; border-bottom:1px solid #404040; color:#ccc; font-weight:600;';
+                    ui.querySelector('#whisper-close-btn').style.cssText = 'background:none; border:none; color:#ccc; font-size:18px; cursor:pointer;';
+                    ui.querySelector('.plugin-content').style.cssText = 'padding:12px; display:flex; flex-direction:column; gap:10px;';
+                    ui.querySelector('#whisper-transcript-view').style.cssText = 'height:120px; resize:none; background-color:#1e1e1e; border:1px solid #555; border-radius:4px; color:#f0f0f0; padding:8px; font-size:12px;';
+
+                    document.body.appendChild(ui);
+                    const buttonRect = event.target.getBoundingClientRect();
+                    const sidebarRect = document.getElementById('sidebar-id').getBoundingClientRect();
+                    const uiWidth = 300;
+                    ui.style.left = `${sidebarRect.left - uiWidth - 10}px`;
+                    ui.style.top = `${buttonRect.top - ui.offsetHeight - 5}px`;
+                    ui.style.visibility = 'visible';
+
+                    // --- 4. ALL LOGIC AS NESTED FUNCTIONS ---
+                    const statusLabel = ui.querySelector('#whisper-status');
+                    const recordBtn = ui.querySelector('#whisper-record-btn');
+                    const toCanvasBtn = ui.querySelector('#whisper-to-canvas-btn');
+                    const closeBtn = ui.querySelector('#whisper-close-btn');
+
+                    const transcribeAndRestart = async (audioBlob) => {
+                         if (!this.pluginWhisper_transcriber) {
+                              statusLabel.textContent = 'Loading Model...';
+                              const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0');
+                              this.pluginWhisper_transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base.en');
+                              // this.pluginWhisper_transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
+                         }
+                         statusLabel.textContent = 'Transcribing...';
+
+                         let audioUrl = null;
+                         try {
+                              audioUrl = URL.createObjectURL(audioBlob);
+                              const output = await this.pluginWhisper_transcriber(audioUrl);
+                              if (output.text && output.text.trim()) {
+                                   const newText = output.text.trim();
+                                   const key = `whisper_transcript_${this.currentEditingId}`;
+                                   const existingTranscript = await this.storage.getItem(key) || '';
+                                   const updatedTranscript = existingTranscript ? `${existingTranscript}\n${newText}` : newText;
+                                   await this.storage.setItem(key, updatedTranscript);
+                                   ui.querySelector('#whisper-transcript-view').value = updatedTranscript;
+                              }
+                         } catch (err) {
+                              console.error("Transcription chunk failed:", err);
+                         } finally {
+                              if (audioUrl) URL.revokeObjectURL(audioUrl);
+                              if (this.pluginWhisper_isRecording) {
+                                   statusLabel.textContent = 'Recording...';
+                                   startChunkRecording(); // Loop and start the next 10-second chunk
+                              }
+                         }
                     };
 
-                    const newElements = ExcalidrawLib.convertToExcalidrawElements([textElement]);
-                    this.excalidrawAPI.updateScene({
-                         elements: [...allElements, ...newElements]
-                    });
-               }
-               async transcribeAndSave(audioBlob) {
-                    if (!this.excalidrawAPI) return;
+                    const startChunkRecording = () => {
+                         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                              this.pluginWhisper_stream = stream;
+                              this.pluginWhisper_mediaRecorder = new MediaRecorder(stream);
 
-                    const statusLabel = document.getElementById('whisper-status');
+                              this.pluginWhisper_mediaRecorder.ondataavailable = (e) => {
+                                   if (e.data.size > 0) transcribeAndRestart(e.data);
+                              };
+
+                              this.pluginWhisper_mediaRecorder.start();
+                              statusLabel.textContent = 'Recording...';
+
+                              this.pluginWhisper_recorderTimeout = setTimeout(() => {
+                                   if (this.pluginWhisper_mediaRecorder && this.pluginWhisper_mediaRecorder.state === "recording") {
+                                        this.pluginWhisper_mediaRecorder.stop();
+                                   }
+                              }, 10000); // Stop after 10s to trigger dataavailable
+                         }).catch(err => {
+                              alert("Microphone access failed.");
+                              this.pluginWhisper_isRecording = false;
+                              recordBtn.textContent = 'Start';
+                              recordBtn.style.backgroundColor = '#2f9e44';
+                              statusLabel.textContent = 'Error';
+                         });
+                    };
+
+                    const stopFullRecording = () => {
+                         this.pluginWhisper_isRecording = false; // Prevents the loop in transcribeAndRestart
+                         clearTimeout(this.pluginWhisper_recorderTimeout);
+                         if (this.pluginWhisper_mediaRecorder && this.pluginWhisper_mediaRecorder.state === "recording") {
+                              this.pluginWhisper_mediaRecorder.stop();
+                         }
+                         if (this.pluginWhisper_stream) {
+                              this.pluginWhisper_stream.getTracks().forEach(track => track.stop());
+                         }
+                         recordBtn.textContent = 'Start';
+                         recordBtn.style.backgroundColor = '#2f9e44';
+                         statusLabel.textContent = 'Idle';
+                    };
+
+                    // --- 5. WIRING ---
+                    this.storage.getItem(`whisper_transcript_${this.currentEditingId}`).then(transcript => {
+                         if (transcript) ui.querySelector('#whisper-transcript-view').value = transcript;
+                    });
+
+                    recordBtn.onclick = () => {
+                         if (this.pluginWhisper_isRecording) {
+                              stopFullRecording();
+                         } else {
+                              this.pluginWhisper_isRecording = true;
+                              recordBtn.textContent = 'Stop';
+                              recordBtn.style.backgroundColor = '#e03131';
+                              startChunkRecording();
+                         }
+                    };
+
+                    toCanvasBtn.onclick = () => this.whisperAddTranscriptToCanvas();
+
+                    closeBtn.onclick = () => {
+                         if (this.pluginWhisper_isRecording) stopFullRecording();
+                         ui.remove();
+                         this.pluginWhisper_ui = null;
+                    };
+               }
+               async whisperAddTranscriptToCanvas() {
+                    const key = `whisper_transcript_${this.currentEditingId}`;
+                    const transcript = await this.storage.getItem(key);
+
+                    if (!transcript || !transcript.trim()) {
+                         alert("There is no transcript to add.");
+                         return;
+                    }
+
+                    const paragraphs = transcript.split('\n').filter(p => p.trim() !== '');
+                    if (paragraphs.length === 0) return;
+
+                    const appState = this.excalidrawAPI.getAppState();
+                    const existingElements = this.excalidrawAPI.getSceneElements();
+                    let currentY = -appState.scrollY + 100; // Start near top of viewport
+
+                    // Find the bottom-most element to append text after it
+                    if (existingElements.length > 0) {
+                         currentY = Math.max(currentY, ...existingElements.map(el => el.y + (el.height || 0))) + 50;
+                    }
+
+                    const newTextElements = paragraphs.map(p => {
+                         const textElement = {
+                              type: 'text',
+                              text: `[🎙️] ${p}`,
+                              x: -appState.scrollX + 50,
+                              y: currentY,
+                              fontSize: 20,
+                              fontFamily: 1, // Hand-drawn
+                              strokeColor: appState.currentItemStrokeColor
+                         };
+                         // Rough height calculation to position next paragraph
+                         currentY += (p.match(/\n/g) || []).length * 25 + 40;
+                         return textElement;
+                    });
+
+                    const excalidrawElements = convertToExcalidrawElements(newTextElements);
+                    this.excalidrawAPI.updateScene({ elements: [...existingElements, ...excalidrawElements] });
+                    this.excalidrawAPI.scrollToContent(excalidrawElements, { fitToContent: true, duration: 500 });
+
+                    // Clear the stored transcript
+                    await this.storage.removeItem(key);
+                    const transcriptView = document.getElementById('whisper-transcript-view');
+                    if (transcriptView) transcriptView.value = '';
+               }
+
+               async whisperAddTranscriptToCanvas() {
+                    const key = `whisper_transcript_${this.currentEditingId}`;
+                    const transcript = await this.storage.getItem(key);
+
+                    if (!transcript || !transcript.trim()) {
+                         alert("There is no transcript to add.");
+                         return;
+                    }
+
+                    const paragraphs = transcript.split('\n').filter(p => p.trim() !== '');
+                    if (paragraphs.length === 0) return;
+
+                    const appState = this.excalidrawAPI.getAppState();
+                    const existingElements = this.excalidrawAPI.getSceneElements();
+                    let currentY = -appState.scrollY + 100; // Start near top of viewport
+
+                    // Find the bottom-most element to append text after it
+                    if (existingElements.length > 0) {
+                         currentY = Math.max(currentY, ...existingElements.map(el => el.y + (el.height || 0))) + 50;
+                    }
+
+                    const newTextElements = paragraphs.map(p => {
+                         const textElement = {
+                              type: 'text',
+                              text: `[🎙️] ${p}`,
+                              x: -appState.scrollX + 50,
+                              y: currentY,
+                              fontSize: 20,
+                              fontFamily: 1, // Hand-drawn
+                              strokeColor: appState.currentItemStrokeColor
+                         };
+                         // Rough height calculation to position next paragraph
+                         currentY += (p.match(/\n/g) || []).length * 25 + 40;
+                         return textElement;
+                    });
+
+                    const excalidrawElements = convertToExcalidrawElements(newTextElements);
+                    this.excalidrawAPI.updateScene({ elements: [...existingElements, ...excalidrawElements] });
+                    this.excalidrawAPI.scrollToContent(excalidrawElements, { fitToContent: true, duration: 500 });
+
+                    // Clear the stored transcript
+                    await this.storage.removeItem(key);
+                    const transcriptView = document.getElementById('whisper-transcript-view');
+                    if (transcriptView) transcriptView.value = '';
+                    alert("Transcript added to canvas and cleared from storage.");
+               }
+
+               /*
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               PLUGIN: Copy Selected Text
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               =================================================================================
+               */
+
+               async pluginCopySelectedText() {
+                    if (!this.excalidrawAPI) {
+                         alert("Excalidraw is not ready.");
+                         return;
+                    }
+
+                    const selectedElementIds = this.excalidrawAPI.getAppState().selectedElementIds;
+                    const allElements = this.excalidrawAPI.getSceneElements();
+                    const selectedTextElements = allElements.filter(element =>
+                         element.type === 'text' && selectedElementIds[element.id]
+                    );
+
+                    if (selectedTextElements.length === 0) {
+                         this.showNotification("No text elements selected.", 1000, 'error');
+                         return;
+                    }
+                    const combinedText = selectedTextElements
+                         .map(element => element.text)
+                         .join('\n\n');
 
                     try {
-                         const transcriber = await this.getTranscriber((progress) => {
-                              if (statusLabel) {
-                                   const percent = (progress.progress || 0).toFixed(2);
-                                   statusLabel.textContent = `Loading model: ${progress.file} (${percent}%)`;
-                              }
-                         });
-
-                         if (statusLabel) statusLabel.textContent = `Transcribing...`;
-
-                         const audioData = await audioBlob.arrayBuffer();
-                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                         const decodedAudio = await audioContext.decodeAudioData(audioData);
-                         const monoChannel = decodedAudio.getChannelData(0);
-
-                         const output = await transcriber(monoChannel, {
-                              chunk_length_s: 30,
-                              stride_length_s: 5,
-                         });
-
-                         const transcribedText = output.text;
-                         if (statusLabel) statusLabel.textContent = 'Recording...'; // Reset status
-
-                         if (transcribedText) {
-                              const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                              const formattedText = `[${timestamp}] ${transcribedText}`;
-                              await this.addTextToCanvas(formattedText);
-                         }
-
-                    } catch (error) {
-                         console.error("Local Transcription Error:", error);
-                         if (statusLabel) statusLabel.textContent = 'Error!';
-                         alert(`Local transcription failed: ${error.message}`);
+                         await navigator.clipboard.writeText(combinedText);
+                         this.showNotification(`Copied ${selectedTextElements.length} text block(s) to clipboard!`, 1000);
+                    } catch (err) {
+                         console.error('Failed to copy text: ', err);
+                         this.showNotification('Could not copy text to clipboard. See console for details.', 1000, 'error');
                     }
                }
+
                /*
                =================================================================================
                =================================================================================
@@ -2721,30 +3001,25 @@
                                         files: allFiles
                                    };
 
-                                   // Use a short timeout to ensure the DOM is ready for the new scene
                                    setTimeout(() => {
                                         excalidrawAPI.updateScene(sceneToLoad);
 
-                                        // After updating the scene, scroll and zoom to fit the new content.
-                                        // We check if there are any elements to prevent errors on empty pages.
                                         if (sceneToLoad.elements && sceneToLoad.elements.length > 0) {
                                              excalidrawAPI.scrollToContent(sceneToLoad.elements, { fitToContent: true });
                                         }
-                                   }, 100); // A 100ms delay is usually safe for the scene to update.
+                                   }, 100);
                               }
                          };
 
                          const container = document.getElementById('excalidraw-container');
                          const root = createRoot(container);
 
-                         // --- MODIFIED: Pass the master files object on initial creation ---
-                         // This makes the initial state aware of all possible images.
                          const ExcalidrawComponent = () => React.createElement(ExcalidrawLib.Excalidraw, {
                               excalidrawAPI: (api) => { excalidrawAPI = api; },
                               viewModeEnabled: true,
                               initialData: {
                                    appState: { theme: 'dark' },
-                                   files: allFiles // Pass the master files object here too!
+                                   files: allFiles
                               }
                          });
 

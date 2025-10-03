@@ -2617,6 +2617,7 @@
                          if (keyframes.length === 0) return;
 
                          this.pluginPresentation_isPresenting = true;
+                         document.removeEventListener('mousedown', handleClickOutside);
                          this.pluginPresentation_currentKeyframeIndex = 0;
 
                          // Set up keyboard navigation
@@ -2650,7 +2651,10 @@
                               this.pluginPresentation_presentationOverlay.remove();
                               this.pluginPresentation_presentationOverlay = null;
                          }
-                         renderUI();
+                         setTimeout(() => {
+                              document.addEventListener('mousedown', handleClickOutside);
+                         }, 100);
+                         // renderUI();
                     };
 
                     const navigateToKeyframe = (index) => {
@@ -2727,7 +2731,9 @@
 
                     // Add click outside handler
                     setTimeout(() => {
-                         document.addEventListener('mousedown', handleClickOutside);
+                         if (!this.pluginPresentation_isPresenting) {
+                              document.addEventListener('mousedown', handleClickOutside);
+                         }
                     }, 100);
                }
                /*

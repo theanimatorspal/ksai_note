@@ -2361,7 +2361,6 @@
                */
 
                pluginPresentation(event) {
-                    // State initialization
                     if (this.pluginPresentation_isPresenting === undefined) {
                          this.pluginPresentation_isPresenting = false;
                          this.pluginPresentation_currentKeyframeIndex = 0;
@@ -2375,7 +2374,6 @@
                          return;
                     }
 
-                    // Remove existing UI if present
                     if (this.pluginPresentation_ui) {
                          this.pluginPresentation_ui.remove();
                          this.pluginPresentation_ui = null;
@@ -2388,7 +2386,6 @@
                     this.pluginPresentation_ui = ui;
                     ui.id = 'presentation-plugin-ui';
 
-                    // Get current notebook and keyframes
                     const getCurrentNotebook = () => this.notebooks.find(n => n.id === this.currentNotebook);
                     const getKeyframes = () => {
                          const nb = getCurrentNotebook();
@@ -2396,7 +2393,6 @@
                          return nb.presentationKeyframes;
                     };
 
-                    // Smooth interpolation function
                     const interpolateToKeyframe = (targetIndex, duration = 800) => {
                          const keyframes = getKeyframes();
                          const targetKeyframe = keyframes[targetIndex];
@@ -2409,7 +2405,6 @@
                               const elapsed = Date.now() - startTime;
                               const progress = Math.min(elapsed / duration, 1);
 
-                              // Smooth ease-in-out cubic
                               const eased = progress < 0.5
                                    ? 4 * progress * progress * progress
                                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -2432,13 +2427,11 @@
                          animate();
                     };
 
-                    // Render function
                     const renderUI = () => {
                          const keyframes = getKeyframes();
                          const isPresenting = this.pluginPresentation_isPresenting;
 
                          if (isPresenting) {
-                              // MINIMAL PRESENTATION OVERLAY
                               if (!this.pluginPresentation_presentationOverlay) {
                                    const overlay = document.createElement('div');
                                    this.pluginPresentation_presentationOverlay = overlay;
@@ -2467,17 +2460,14 @@
                                    document.body.appendChild(overlay);
                                    overlay.querySelector('#pres-end-btn-overlay').onclick = endPresentation;
                               } else {
-                                   // Update counter
                                    this.pluginPresentation_presentationOverlay.querySelector('span').textContent =
                                         `${this.pluginPresentation_currentKeyframeIndex + 1} / ${keyframes.length}`;
                               }
 
-                              // Hide the main UI during presentation
                               ui.style.display = 'none';
                               return;
                          } else {
                               ui.style.display = 'block';
-                              // SETUP MODE UI
                               const keyframesList = keyframes.map((kf, idx) => {
                                    const nb = getCurrentNotebook();
                                    const section = nb.sections.find(s => s.id === kf.sectionId);
@@ -2491,6 +2481,7 @@
                             <div style="font-size: 11px; color: #999;">📄 ${locationText}</div>
                         </div>
                         <div style="display: flex; gap: 5px;">
+                            <button class="action-btn" onclick="app.presentationEditKeyframe(${idx})" title="Edit">✏️</button>
                             <button class="action-btn" onclick="app.presentationDeleteKeyframe('${kf.id}')" title="Delete">×</button>
                         </div>
                     </div>
@@ -2528,7 +2519,6 @@
             `;
                          }
 
-                         // Apply styles
                          Object.assign(ui.style, {
                               position: 'absolute',
                               width: '350px',
@@ -2544,13 +2534,11 @@
                          ui.querySelector('#pres-close-btn').style.cssText = 'background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer;';
                          ui.querySelector('.plugin-content').style.cssText = 'padding: 12px;';
 
-                         // Position UI
                          const sidebarRect = document.getElementById('sidebar-id').getBoundingClientRect();
                          ui.style.left = `${sidebarRect.left - 360}px`;
                          ui.style.top = `${rect.top - ui.offsetHeight - 5}px`;
                          ui.style.visibility = 'visible';
 
-                         // Wire up event handlers
                          ui.querySelector('#pres-close-btn').onclick = closeUI;
 
                          if (!isPresenting) {
@@ -2562,7 +2550,6 @@
                          }
                     };
 
-                    // Helper functions
                     const closeUI = () => {
                          if (this.pluginPresentation_isPresenting) {
                               endPresentation();
@@ -2620,7 +2607,6 @@
                          document.removeEventListener('mousedown', handleClickOutside);
                          this.pluginPresentation_currentKeyframeIndex = 0;
 
-                         // Set up keyboard navigation
                          this.pluginPresentation_keyboardHandler = (e) => {
                               if (!this.pluginPresentation_isPresenting) return;
 
@@ -2654,7 +2640,6 @@
                          setTimeout(() => {
                               document.addEventListener('mousedown', handleClickOutside);
                          }, 100);
-                         // renderUI();
                     };
 
                     const navigateToKeyframe = (index) => {
@@ -2664,20 +2649,17 @@
 
                          this.pluginPresentation_currentKeyframeIndex = index;
 
-                         // Check if we need to change pages
                          const needsPageChange =
                               keyframe.sectionId !== this.currentSection ||
                               keyframe.subsectionId !== this.currentSubsection;
 
                          if (needsPageChange) {
-                              // Navigate to page first
                               if (keyframe.subsectionId) {
                                    this.selectSubsection(keyframe.notebookId, keyframe.sectionId, keyframe.subsectionId);
                               } else {
                                    this.selectSection(keyframe.notebookId, keyframe.sectionId);
                               }
 
-                              // Wait for page to load, then animate
                               setTimeout(() => {
                                    if (this.excalidrawAPI) {
                                         interpolateToKeyframe(index, 800);
@@ -2688,7 +2670,6 @@
                                    }
                               }, 400);
                          } else {
-                              // Same page, just animate viewport
                               interpolateToKeyframe(index, 800);
                               if (this.pluginPresentation_presentationOverlay) {
                                    this.pluginPresentation_presentationOverlay.querySelector('span').textContent =
@@ -2712,7 +2693,6 @@
                          }
                     };
 
-                    // Expose functions to window for onclick handlers
                     window.app.presentationGoToKeyframe = (idx) => {
                          navigateToKeyframe(idx);
                     };
@@ -2725,11 +2705,72 @@
                          renderUI();
                     };
 
-                    // Initial render and setup
+                    window.app.presentationEditKeyframe = (idx) => {
+                         if (!this.excalidrawAPI) return;
+
+                         const keyframes = getKeyframes();
+                         const keyframe = keyframes[idx];
+                         if (!keyframe) return;
+
+                         // Navigate to the keyframe first
+                         navigateToKeyframe(idx);
+
+                         // Create a non-blocking edit UI overlay
+                         setTimeout(() => {
+                              const editOverlay = document.createElement('div');
+                              editOverlay.id = 'keyframe-edit-overlay';
+                              editOverlay.innerHTML = `
+            <div style="background: #252526; padding: 15px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                <p style="margin: 0 0 15px 0; color: #ccc; font-size: 14px;">
+                    📍 Position your canvas, then click Update
+                </p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="edit-update-btn" style="flex: 1; background: #2f9e44; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        ✓ Update Keyframe
+                    </button>
+                    <button id="edit-cancel-btn" style="flex: 1; background: #555; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+
+                              Object.assign(editOverlay.style, {
+                                   position: 'fixed',
+                                   bottom: '20px',
+                                   left: '50%',
+                                   transform: 'translateX(-50%)',
+                                   zIndex: '1004'
+                              });
+
+                              document.body.appendChild(editOverlay);
+
+                              editOverlay.querySelector('#edit-update-btn').onclick = () => {
+                                   const appState = this.excalidrawAPI.getAppState();
+                                   keyframe.viewState = {
+                                        scrollX: appState.scrollX,
+                                        scrollY: appState.scrollY,
+                                        zoom: appState.zoom
+                                   };
+                                   keyframe.timestamp = Date.now();
+
+                                   const notebook = getCurrentNotebook();
+                                   notebook.presentationKeyframes[idx] = keyframe;
+                                   this.saveToStorage();
+                                   this.showNotification('Keyframe updated!', 1000, 'success');
+                                   editOverlay.remove();
+                                   renderUI();
+                              };
+
+                              editOverlay.querySelector('#edit-cancel-btn').onclick = () => {
+                                   editOverlay.remove();
+                              };
+                         }, 1000);
+                    };
+
                     document.body.appendChild(ui);
                     renderUI();
 
-                    // Add click outside handler
                     setTimeout(() => {
                          if (!this.pluginPresentation_isPresenting) {
                               document.addEventListener('mousedown', handleClickOutside);

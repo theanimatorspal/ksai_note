@@ -2815,7 +2815,7 @@
                          this.pluginTurtleDiagram_cursorY = 0;
                          this.pluginTurtleDiagram_cursorEl = null;
                          this.pluginTurtleDiagram_previewId = null;
-                         this.pluginTurtleDiagram_roundness = { label: "Sharp", value: null };
+                         this.pluginTurtleDiagram_roundness = null;
                     }
 
                     const getCanvasCenter = () => {
@@ -2826,9 +2826,10 @@
                          };
                     };
 
-                    const center = getCanvasCenter();
-                    this.pluginTurtleDiagram_cursorX = center.x;
-                    this.pluginTurtleDiagram_cursorY = center.y;
+                    const state = this.excalidrawAPI.getAppState();
+                    const zoom = state.zoom.value;
+                    this.pluginTurtleDiagram_cursorX = (-state.scrollX + 60 / zoom);
+                    this.pluginTurtleDiagram_cursorY = (-state.scrollY + 60 / zoom);
                     this.pluginTurtleDiagram_penDown = false;
                     this.pluginTurtleDiagram_path = [];
 
@@ -2938,16 +2939,18 @@
                                    y: path[0].y,
                                    points,
                                    strokeColor: this.excalidrawAPI.getAppState().currentItemStrokeColor,
-                                   strokeWidth: this.pluginTurtleDiagram_strokeWidth,
+                                   strokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 2),
                                    strokeStyle: this.pluginTurtleDiagram_strokeStyle,
                                    startArrowhead: this.pluginTurtleDiagram_startArrow === 'none' ? null : this.pluginTurtleDiagram_startArrow,
                                    endArrowhead: this.pluginTurtleDiagram_endArrow === 'none' ? null : this.pluginTurtleDiagram_endArrow,
                                    roughness: 0,
-                                   roundness: this.pluginTurtleDiagram_roundness,
                                    opacity: 50,
                                    fillStyle: 'solid',
                                    backgroundColor: 'transparent',
-                              }]);
+                              }]).map(el => ({
+                                   ...el,
+                                   roundness: this.pluginTurtleDiagram_roundness === null ? null : { type: 2 },
+                              }));
 
                               this.pluginTurtleDiagram_previewId = converted[0].id;
                               this.excalidrawAPI.updateScene({ elements: [...existingElements, ...converted] });
@@ -3049,9 +3052,6 @@
 
                     const strokeSel = makeSelect(strokeStyles, this.pluginTurtleDiagram_strokeStyle, (v) => { this.pluginTurtleDiagram_strokeStyle = v; }, null);
                     content.appendChild(makeRow('Line style:', strokeSel));
-
-                    const widthSel = makeSelect([1, 2, 3, 4, 6], this.pluginTurtleDiagram_strokeWidth, (v) => { this.pluginTurtleDiagram_strokeWidth = parseInt(v); }, null);
-                    content.appendChild(makeRow('Stroke width:', widthSel));
 
                     const roundSel = document.createElement('select');
                     Object.assign(roundSel.style, {

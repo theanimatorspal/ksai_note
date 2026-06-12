@@ -619,7 +619,7 @@
                          <div class="stroke-controls">
                               <div class="control-group">
                                    <label for="strokeWidthSlider">🎨Stroke:</label>
-                                   <input type="range" id="strokeWidthSlider" min="0.1" max="3" step="0.3" value="0.3">
+                                   <input type="range" id="strokeWidthSlider" min="0.1" max="7" step="0.1" value="0.2">
                                    <span id="strokeWidthValue">0.3</span>
                               </div>
                               <div class="color-palette" id="colorPalette"></div>
@@ -2816,6 +2816,7 @@
                          this.pluginTurtleDiagram_cursorEl = null;
                          this.pluginTurtleDiagram_previewId = null;
                          this.pluginTurtleDiagram_roundness = null;
+                         this.pluginTurtleDiagram_straightStart = null;
                     }
 
                     const getCanvasCenter = () => {
@@ -2874,12 +2875,30 @@
                          cursorSvg.style.left = screenX + 'px';
                          cursorSvg.style.top = screenY + 'px';
                          const penDown = this.pluginTurtleDiagram_penDown;
-                         cursorSvg.querySelector('circle').setAttribute('fill', penDown ? '#e03131' : '#0078d4');
+                         const straightMode = this.pluginTurtleDiagram_straightStart !== null;
+                         cursorSvg.querySelector('circle').setAttribute('fill',
+                              straightMode ? '#f08c00' : penDown ? '#e03131' : '#0078d4'
+                         );
                     };
 
                     updateCursorScreenPos();
 
                     const commitStroke = () => {
+                         if (this.pluginTurtleDiagram_straightStart !== null) {
+                              if (this.pluginTurtleDiagram_previewId) {
+                                   const promoted = this.excalidrawAPI.getSceneElements().map(el => {
+                                        if (el.id !== this.pluginTurtleDiagram_previewId) return el;
+                                        return { ...el, opacity: 100 };
+                                   });
+                                   this.excalidrawAPI.updateScene({ elements: promoted });
+                                   this.pluginTurtleDiagram_previewId = null;
+                              }
+                              this.pluginTurtleDiagram_straightStart = null;
+                              updateCursorScreenPos();
+                              updateUI();
+                              this.showNotification('Straight line committed', 800, 'success');
+                              return;
+                         }
                          const path = this.pluginTurtleDiagram_path;
                          if (path.length < 2) { this.pluginTurtleDiagram_path = []; return; }
 
@@ -2906,7 +2925,9 @@
                          }
                          this.pluginTurtleDiagram_cursorX += dx;
                          this.pluginTurtleDiagram_cursorY += dy;
-                         if (this.pluginTurtleDiagram_penDown) {
+                         if (this.pluginTurtleDiagram_straightStart !== null) {
+                              updatePreview();
+                         } else if (this.pluginTurtleDiagram_penDown) {
                               this.pluginTurtleDiagram_path.push({ x: this.pluginTurtleDiagram_cursorX, y: this.pluginTurtleDiagram_cursorY });
                               updatePreview();
                          }
@@ -2915,6 +2936,44 @@
                     };
 
                     const updatePreview = () => {
+                         const straight = this.pluginTurtleDiagram_straightStart;
+                         if (straight) {
+                              const points = [
+                                   [0, 0],
+                                   [this.pluginTurtleDiagram_cursorX - straight.x, this.pluginTurtleDiagram_cursorY - straight.y]
+                              ];
+                              const existingElements = this.excalidrawAPI.getSceneElements();
+                              if (this.pluginTurtleDiagram_previewId) {
+                                   const updated = existingElements.map(el => {
+                                        if (el.id !== this.pluginTurtleDiagram_previewId) return el;
+                                        return { ...el, points, x: straight.x, y: straight.y };
+                                   });
+                                   this.excalidrawAPI.updateScene({ elements: updated });
+                              } else {
+                                   const converted = ExcalidrawLib.convertToExcalidrawElements([{
+                                        type: 'arrow',
+                                        x: straight.x,
+                                        y: straight.y,
+                                        points,
+                                        strokeColor: this.excalidrawAPI.getAppState().currentItemStrokeColor,
+                                        strokeWidth: parseFloat(document.getElementById('strokeWidthSlider')?.value || 2),
+                                        strokeStyle: this.pluginTurtleDiagram_strokeStyle,
+                                        startArrowhead: this.pluginTurtleDiagram_startArrow === 'none' ? null : this.pluginTurtleDiagram_startArrow,
+                                        endArrowhead: this.pluginTurtleDiagram_endArrow === 'none' ? null : this.pluginTurtleDiagram_endArrow,
+                                        roughness: 0,
+                                        opacity: 50,
+                                        fillStyle: 'solid',
+                                        backgroundColor: 'transparent',
+                                   }]).map(el => ({
+                                        ...el,
+                                        roundness: this.pluginTurtleDiagram_roundness === null ? null : { type: 2 },
+                                   }));
+                                   this.pluginTurtleDiagram_previewId = converted[0].id;
+                                   this.excalidrawAPI.updateScene({ elements: [...existingElements, ...converted] });
+                              }
+                              return;
+                         }
+
                          const path = this.pluginTurtleDiagram_path;
                          if (path.length < 2) return;
 
@@ -3014,7 +3073,21 @@
 
                     const updateUI = () => {
                          const down = this.pluginTurtleDiagram_penDown;
-                         penStatusEl.textContent = down ? '🔴 PEN DOWN (drawing)' : '🔵 PEN UP (moving)';
+                         const straight = this.pluginTurtleDiagram_straightStart !== null;
+                         if (straight) {
+                              penStatusEl.textContent = '📏 STRAIGHT MODE (move then Enter)';
+                              penStatusEl.style.background = 'rgba(240,140,0,0.18)';
+                              penStatusEl.style.color = '#f0a030';
+                         } else if (down) {
+                              penStatusEl.textContent = '🔴 PEN DOWN (drawing)';
+                              penStatusEl.style.background = 'rgba(224,49,49,0.18)';
+                              penStatusEl.style.color = '#ff6b6b';
+                         } else {
+                              penStatusEl.textContent = '🔵 PEN UP (moving)';
+                              penStatusEl.style.background = 'rgba(0,120,212,0.18)';
+                              penStatusEl.style.color = '#60b0ff';
+                         }
+
                          penStatusEl.style.background = down ? 'rgba(224,49,49,0.18)' : 'rgba(0,120,212,0.18)';
                          penStatusEl.style.color = down ? '#ff6b6b' : '#60b0ff';
                          posEl.textContent = `x: ${Math.round(this.pluginTurtleDiagram_cursorX)}  y: ${Math.round(this.pluginTurtleDiagram_cursorY)}`;
@@ -3039,6 +3112,7 @@
                               <span style="color:#aaa;font-weight:600;">Movement:</span> h j k l<br>
                               <span style="color:#aaa;font-weight:600;">Pen down:</span> i &nbsp; <span style="color:#aaa;font-weight:600;">Pen up:</span> Esc<br>
                               <span style="color:#aaa;font-weight:600;">Commit stroke:</span> Enter / f<br>
+                              <span style="color:#aaa;font-weight:600;">Straight line:</span> I (shift+i)<br>
                               <span style="color:#aaa;font-weight:600;">Discard stroke:</span> d
                          `;
                     content.appendChild(kbdHint);
@@ -3128,7 +3202,7 @@
                          const active = document.activeElement;
                          if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA')) return;
 
-                         const turtleKeys = new Set(['h', 'j', 'k', 'l', 'i', 'f', 'd', 'Enter', 'Escape']);
+                         const turtleKeys = new Set(['h', 'j', 'k', 'l', 'i', 'I', 'f', 'd', 'Enter', 'Escape']);
                          if (!turtleKeys.has(e.key)) return;
 
                          e.stopImmediatePropagation();
@@ -3151,6 +3225,10 @@
                                    updateUI();
                               },
                               'Escape': () => {
+                                   if (this.pluginTurtleDiagram_straightStart !== null) {
+                                        removePreview();
+                                        this.pluginTurtleDiagram_straightStart = null;
+                                   }
                                    this.pluginTurtleDiagram_penDown = false;
                                    updateCursorScreenPos();
                                    updateUI();
@@ -3160,9 +3238,26 @@
                               'd': () => {
                                    removePreview();
                                    this.pluginTurtleDiagram_path = [];
+                                   this.pluginTurtleDiagram_straightStart = null;
                                    updateUI();
                                    this.showNotification('Stroke discarded', 800, 'error');
-                              }
+                              },
+                              'I': () => {
+                                   if (this.pluginTurtleDiagram_straightStart !== null) {
+                                        commitStroke();
+                                        return;
+                                   }
+                                   this.pluginTurtleDiagram_penDown = false;
+                                   this.pluginTurtleDiagram_path = [];
+                                   removePreview();
+                                   this.pluginTurtleDiagram_straightStart = {
+                                        x: this.pluginTurtleDiagram_cursorX,
+                                        y: this.pluginTurtleDiagram_cursorY
+                                   };
+                                   updatePreview();
+                                   updateCursorScreenPos();
+                                   updateUI();
+                              },
                          };
 
                          if (handlers[e.key]) handlers[e.key]();
